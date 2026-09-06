@@ -4,20 +4,23 @@ import {
   ArrowDownToLine,
   ArrowUpFromLine,
   Package,
+  Tag,
   Building2,
   Boxes,
+  CalendarDays,
   FileSpreadsheet,
   Archive,
   Settings,
   HelpCircle,
   Info,
   AlertTriangle,
+  Sparkles,
 } from "lucide-react";
 
 /**
  * Help Desk / user guide page — content is in Roman Urdu because the
- * operators are Urdu-speaking. Structure: quick intro → step-by-step for
- * each screen → common problems → contact.
+ * operators are Urdu-speaking. Structure: quick intro → what's new →
+ * step-by-step for each screen → common problems → contact.
  */
 export default function HelpPage() {
   return (
@@ -42,6 +45,35 @@ export default function HelpPage() {
         </div>
       </div>
 
+      {/* What's new */}
+      <Section
+        icon={<Sparkles className="h-5 w-5" />}
+        title="Kya naya add hua? (latest update)"
+      >
+        <p>Is update me 3 badi cheezein add hui hain:</p>
+        <ul className="mt-2 list-disc space-y-1 pl-5">
+          <li>
+            <b>Categories</b> — har product ka ab ek category hoga (Bread, Meat
+            & Poultry, Vegetables, Fruits, Dairy, Spices, Cleaning &
+            Dishwashing wagera). Har category ka apna <b>rang</b> hota hai jo
+            Products, Stock aur Excel report me nazar aata hai — dekhne me
+            jaldi samajh aata hai kaunsa product kis type ka hai.
+          </li>
+          <li>
+            <b>Product Calendar</b> — kisi bhi product ka poore mahine ka
+            heatmap dekh sakte ho: kis din kitna aya (green), kis din kitna
+            nikla (red). Poori history ek nazar me.
+          </li>
+          <li>
+            <b>Excel report ka layout</b> — sab products (chahe us mahine
+            movement hui ho ya na hui ho) ab sheet me automatically show hote
+            hain, category-wise coloured banners ke sath — bilkul aap ke
+            paper wale ledger jaisa. Har product ka <b>IN STOCK / DEPLETED /
+            OUT OF STOCK</b> status column bhi.
+          </li>
+        </ul>
+      </Section>
+
       {/* Quick intro */}
       <Section
         icon={<Info className="h-5 w-5" />}
@@ -60,11 +92,17 @@ export default function HelpPage() {
             entry rakh sakte ho — kis department ko, kitna, kis din.
           </li>
           <li>
-            Har product ka <b>live stock</b> dekh sakte ho (kitna bacha hai).
+            Har product ka <b>live stock</b> dekh sakte ho (kitna bacha hai),
+            aur kis category ka hai.
+          </li>
+          <li>
+            Har product ka <b>calendar heatmap</b> dekh sakte ho — mahine me
+            kis din kya movement hui.
           </li>
           <li>
             Har mahine ki <b>Excel report</b> download kar sakte ho — Store
-            summary, per-day matrix, department-wise expense sab included.
+            summary (category-wise coloured), per-day matrix, department-wise
+            expense sab included.
           </li>
         </ul>
         <p className="mt-2 rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-800">
@@ -95,6 +133,50 @@ export default function HelpPage() {
         </ul>
       </Section>
 
+      {/* Categories — NEW */}
+      <Section
+        icon={<Tag className="h-5 w-5" />}
+        title="Categories — Products ko group karna (naya feature)"
+      >
+        <p>
+          <b>Category</b> matlab product ki kism — jaise Bread, Meat & Poultry,
+          Vegetables, Fruits, Dairy, Spices, Sauces, Cleaning wagera. System me
+          <b> 16 default categories</b> pehle se bani hui hain — aap chahein to
+          apni bhi banao ya rang change karo.
+        </p>
+        <p className="mt-2 font-semibold">Category kaise banao / edit karo:</p>
+        <ol className="mt-1 list-decimal space-y-1 pl-5">
+          <li>Left menu se <b>Categories</b> pe jao.</li>
+          <li>
+            <b>Category Name</b> likho (misal: "Frozen Desserts",
+            "Beverages" wagera).
+          </li>
+          <li>
+            <b>Color</b> pick karo — neeche palette me se click karo, ya khud
+            koi 6-digit hex code likho (<code>FDE68A</code>, <code>BBF7D0</code>{" "}
+            wagera). Ye rang Excel report aur Products page me use hoga.
+          </li>
+          <li>
+            <b>Sort</b> — chota number pehle aata hai. Misal Bread ka sort 10
+            aur Cleaning ka 900, to Bread upar rahegi list me.
+          </li>
+          <li><b>Add Category</b> dabao.</li>
+        </ol>
+        <p className="mt-2">
+          Purana category rename karna ho, ya rang change karna ho — table me{" "}
+          <b>Edit</b> dabao aur save karo. Deactivate karne se history safe
+          rehti hai, sirf naye products me wo category select nahi ho sakti.
+        </p>
+        <div className="mt-2 flex items-start gap-2 rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-800">
+          <Info className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            Reference file (Kitchen Consumption Report) ke <b>286 products</b> ab
+            pre-loaded hain, sab category-wise. Aap unhe direct <b>Products</b> page
+            se dekh sakte ho.
+          </span>
+        </div>
+      </Section>
+
       {/* Departments */}
       <Section
         icon={<Building2 className="h-5 w-5" />}
@@ -123,19 +205,38 @@ export default function HelpPage() {
         </div>
       </Section>
 
-      {/* Products */}
+      {/* Products — UPDATED for category */}
       <Section
         icon={<Package className="h-5 w-5" />}
-        title="Products — Naya product kaise add hota hai?"
+        title="Products — Add karo aur category assign karo"
       >
         <p>
-          Aap ko <b>alag se product manually add nahi karna</b> — jab bhi aap
-          Incoming entry me naya product likhoge, wo automatically add ho jaega.
+          Product do tarike se add ho sakta hai:
+        </p>
+        <ol className="mt-2 list-decimal space-y-1 pl-5">
+          <li>
+            <b>Manually — Products page se:</b> naam, unit, aur <b>category</b>{" "}
+            select karo, phir <b>Add Product</b>. Category dropdown se koi bhi
+            active category chun sakte ho (ya "Uncategorized" chhod do).
+          </li>
+          <li>
+            <b>Automatically — Incoming entry se:</b> jab aap Incoming me naya
+            product naam likhoge, wo system me apne aap create ho jayega. Baad
+            me Products page se uska category set kar dena.
+          </li>
+        </ol>
+        <p className="mt-2">
+          Products page pe rows ab <b>category-wise grouped</b> aati hain, har
+          category ka coloured banner upar. Search box ke saath ek{" "}
+          <b>category filter</b> bhi hai — sirf ek category ke products dekhne
+          ke liye use karo.
         </p>
         <p className="mt-2">
-          Products page pe aap sirf existing products ki list dekh sakte ho,
-          unit change kar sakte ho, ya kisi ko deactivate kar sakte ho (agar wo
-          product ab use me nahi hai).
+          Jo product ka current stock 0 ho, uske aage ek chota{" "}
+          <span className="rounded bg-red-100 px-1.5 py-0.5 text-xs font-semibold text-red-700">
+            out of stock
+          </span>{" "}
+          badge nazar aata hai — jaldi samajh aata hai kya khareedna hai.
         </p>
       </Section>
 
@@ -171,6 +272,15 @@ export default function HelpPage() {
             <b>Void</b> sirf tab possible hai jab is batch se koi outgoing na
             hui ho. Agar issue ho chuki hai to pehle outgoing entries void
             karo, phir incoming void hoga.
+          </span>
+        </div>
+        <div className="mt-2 flex items-start gap-2 rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-800">
+          <Info className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            Naya product Incoming se add hua ho to uska <b>category</b>{" "}
+            initially blank hoga. Baad me Products page pe ja kar edit karo aur
+            correct category assign karo — warna wo product Excel report me
+            "Uncategorized" section me chala jaayega.
           </span>
         </div>
       </Section>
@@ -223,7 +333,9 @@ export default function HelpPage() {
       >
         <p>
           Stock page pe aap ko real-time stock milega — har product ki current
-          quantity, stock value, aur average cost per unit.
+          quantity, stock value, aur average cost per unit. Rows ab{" "}
+          <b>category-wise grouped</b> aati hain (jaisa Products page me hota
+          hai), plus ek <b>category filter</b> bhi hai upar.
         </p>
         <ul className="mt-2 list-disc space-y-1 pl-5">
           <li>
@@ -238,7 +350,55 @@ export default function HelpPage() {
         </ul>
       </Section>
 
-      {/* Reports */}
+      {/* Product Calendar — NEW */}
+      <Section
+        icon={<CalendarDays className="h-5 w-5" />}
+        title="Product Calendar — Kisi product ka poora mahina dekho (naya feature)"
+      >
+        <p>
+          Kabhi kabhi ye jaanna hota hai ke ek product kis kis din aaya aur kis
+          kis din nikla — <b>Product Calendar</b> page bilkul isi ke liye hai.
+        </p>
+        <ol className="mt-2 list-decimal space-y-1 pl-5">
+          <li>Left menu se <b>Product Calendar</b> pe jao.</li>
+          <li>
+            Chahein to pehle <b>category filter</b> laga do (misal sirf
+            "Meat & Poultry" wale products dropdown me aa jayenge).
+          </li>
+          <li>
+            <b>Product</b> dropdown se koi ek product choose karo.
+          </li>
+          <li>
+            Upar ke <b>‹ / ›</b> buttons se month change karo, ya{" "}
+            <b>Today</b> dabao aaj ke mahine par jump karne ke liye.
+          </li>
+        </ol>
+        <p className="mt-2">Calendar ki reading kaise karo:</p>
+        <ul className="mt-1 list-disc space-y-1 pl-5">
+          <li>
+            <b>Green stripe (upar)</b> = us din stock <b>aya (incoming)</b> —
+            jitna gehra rang, utni zyada quantity.
+          </li>
+          <li>
+            <b>Red stripe (neeche)</b> = us din stock <b>nikla (outgoing)</b> —
+            department ko diya gaya.
+          </li>
+          <li>
+            Kisi bhi cell pe <b>hover</b> karo — tooltip me exact date, qty,
+            aur expense show hoga.
+          </li>
+          <li>
+            Blank cell = us din is product ki koi movement nahi hui.
+          </li>
+        </ul>
+        <p className="mt-2">
+          Upar KPI strip me month totals hain (kitna aya, kitna gaya, net
+          movement, current stock). Neeche <b>Day-by-day</b> table me sirf woh
+          din listed hain jab koi movement hui — clean list ke liye.
+        </p>
+      </Section>
+
+      {/* Reports — UPDATED */}
       <Section
         icon={<FileSpreadsheet className="h-5 w-5" />}
         title="Reports — Excel file kaise nikalni hai?"
@@ -258,12 +418,15 @@ export default function HelpPage() {
         <ul className="mt-1 list-disc space-y-1 pl-5">
           <li>
             <b>Store In & Out</b> — har product ki opening, incoming, outgoing,
-            closing quantity aur money — plus <b>grand total</b>.
+            closing quantity aur money — plus <b>grand total</b>. Products ab{" "}
+            <b>category-wise banded</b> aate hain (Bread, Meat, Vegetables
+            wagera ka apna rangeen banner row), aur last column me{" "}
+            <b>IN STOCK / DEPLETED / OUT OF STOCK</b> status.
           </li>
           <li>
             <b>Outward (Day Matrix)</b> — jo aap ka purana August wala format
             tha wesa hi — har product row, har din column, kitna nikla us din.
-            Plus expense column bhi.
+            Ab category column bhi add ho gaya hai, aur banner rows bhi.
           </li>
           <li>
             <b>Inward (Day Matrix)</b> — same shape lekin purchases ka.
@@ -273,11 +436,25 @@ export default function HelpPage() {
             expense hua, % share sab.
           </li>
           <li>
-            <b>Dept: [naam]</b> — har department ki apni alag sheet, uska
-            complete detail (date, product, qty, expense, per-product
-            breakdown).
+            <b>Dept: [naam]</b> — har department ki apni alag sheet — complete
+            detail (date, product, qty, expense). Per-product breakdown ab bhi
+            <b> category-wise coloured</b> hoti hai.
+          </li>
+          <li>
+            <b>Summary</b> — poori report ka snapshot, plus{" "}
+            <b>Category-wise Expense Summary</b> table (kis category pe kitna
+            purchase, kitna consumption).
           </li>
         </ul>
+        <div className="mt-2 flex items-start gap-2 rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-800">
+          <Info className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            Sab active products har report me automatically aate hain — chahe
+            us mahine unki koi movement na hui ho. Quantity blank rehti hai aur
+            Status "OUT OF STOCK" show hota hai. Ye aap ke paper wale ledger
+            jaisa hai — har mahine ek complete roster.
+          </span>
+        </div>
       </Section>
 
       {/* Archives */}
@@ -339,7 +516,39 @@ export default function HelpPage() {
             </p>
             <p className="text-sm text-gray-600">
               → Pehle Incoming me us product ki ek entry karo (naya product
-              wahin add ho jaayega), phir Outgoing me select ho sakega.
+              wahin add ho jaayega), phir Outgoing me select ho sakega. Ya
+              direct <b>Products</b> page se manually add kar do.
+            </p>
+          </li>
+          <li>
+            <p className="font-semibold text-gray-900">
+              Excel report me kuch products "Uncategorized" me aa rahe hain
+            </p>
+            <p className="text-sm text-gray-600">
+              → Un products ka category set nahi hua. <b>Products</b> page pe
+              jao, filter "— Uncategorized —" laga do, phir har product ka Edit
+              dabao aur correct category select kar ke save karo.
+            </p>
+          </li>
+          <li>
+            <p className="font-semibold text-gray-900">
+              Category ka rang change karna hai
+            </p>
+            <p className="text-sm text-gray-600">
+              → <b>Categories</b> page pe jao, us category ka <b>Edit</b>{" "}
+              dabao, palette me se naya rang pick karo (ya 6-digit hex code
+              likho), phir Save. Products / Stock / Excel report sab me foran
+              naya rang lag jaayega.
+            </p>
+          </li>
+          <li>
+            <p className="font-semibold text-gray-900">
+              Product Calendar me kuch nahi dikh raha
+            </p>
+            <p className="text-sm text-gray-600">
+              → Iska matlab us product ki us mahine me koi movement nahi hui.
+              Month change karo (‹ / ›), ya doosra product try karo. Agar poora
+              mahine blank hai to page ke neeche "No movement" message ayega.
             </p>
           </li>
           <li>
