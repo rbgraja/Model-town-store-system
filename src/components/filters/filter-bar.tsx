@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ChevronDown, X } from "lucide-react";
 import { SelectInput, TextInput } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 
@@ -15,6 +17,7 @@ export function FilterBar({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   function update(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -28,13 +31,13 @@ export function FilterBar({
     router.push(basePath);
   }
 
-  const hasFilters = ["product", "department", "from", "to"].some((k) =>
+  const activeCount = ["product", "department", "from", "to"].filter((k) =>
     searchParams.get(k)
-  );
+  ).length;
 
-  return (
-    <div className="mb-4 flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="w-52">
+  const body = (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:flex md:flex-wrap md:items-end">
+      <div className="w-full md:w-52">
         <label className="mb-1 block text-xs font-medium text-gray-500">
           Product
         </label>
@@ -52,7 +55,7 @@ export function FilterBar({
       </div>
 
       {departments && (
-        <div className="w-52">
+        <div className="w-full md:w-52">
           <label className="mb-1 block text-xs font-medium text-gray-500">
             Department
           </label>
@@ -70,7 +73,7 @@ export function FilterBar({
         </div>
       )}
 
-      <div>
+      <div className="w-full md:w-auto">
         <label className="mb-1 block text-xs font-medium text-gray-500">
           From
         </label>
@@ -81,7 +84,7 @@ export function FilterBar({
         />
       </div>
 
-      <div>
+      <div className="w-full md:w-auto">
         <label className="mb-1 block text-xs font-medium text-gray-500">
           To
         </label>
@@ -92,11 +95,44 @@ export function FilterBar({
         />
       </div>
 
-      {hasFilters && (
-        <Button variant="ghost" size="sm" onClick={clearAll}>
-          Clear filters
-        </Button>
+      {activeCount > 0 && (
+        <div className="w-full sm:col-span-2 md:w-auto">
+          <Button variant="ghost" size="sm" onClick={clearAll} className="w-full md:w-auto">
+            <X className="h-3.5 w-3.5" />
+            Clear filters
+          </Button>
+        </div>
       )}
+    </div>
+  );
+
+  return (
+    <div className="mb-4 rounded-xl border border-gray-200 bg-white shadow-sm">
+      {/* Mobile: collapsible header */}
+      <button
+        type="button"
+        onClick={() => setMobileOpen((v) => !v)}
+        className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-gray-700 md:hidden"
+        aria-expanded={mobileOpen}
+      >
+        <span className="flex items-center gap-2">
+          Filters
+          {activeCount > 0 && (
+            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
+              {activeCount}
+            </span>
+          )}
+        </span>
+        <ChevronDown
+          className={`h-4 w-4 text-gray-400 transition-transform ${
+            mobileOpen ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      <div className={`${mobileOpen ? "block" : "hidden"} border-t border-gray-100 p-4 md:block md:border-t-0`}>
+        {body}
+      </div>
     </div>
   );
 }

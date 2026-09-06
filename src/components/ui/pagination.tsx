@@ -30,11 +30,12 @@ export function Pagination({
   const end = Math.min(page * pageSize, total);
 
   return (
-    <div className="flex items-center justify-between border-t border-gray-100 px-5 py-3 text-sm text-gray-500">
-      <span>
-        Showing {start}-{end} of {total}
+    <div className="mt-3 flex flex-col items-stretch gap-2 rounded-xl border border-gray-100 bg-white px-4 py-3 text-sm text-gray-600 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <span className="text-center sm:text-left">
+        Showing <b>{start}-{end}</b> of <b>{total}</b>
+        <span className="hidden sm:inline"> · Page {page} of {totalPages}</span>
       </span>
-      <div className="flex gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-2">
         <Button
           variant="secondary"
           size="sm"

@@ -9,6 +9,7 @@ import {
   FileSpreadsheet,
   Archive,
   Settings,
+  HelpCircle,
 } from "lucide-react";
 
 export interface NavItem {
@@ -26,5 +27,6 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/stock", label: "Stock", icon: Boxes },
   { href: "/reports", label: "Reports", icon: FileSpreadsheet },
   { href: "/archives", label: "Archives", icon: Archive },
+  { href: "/help", label: "Help Desk", icon: HelpCircle },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

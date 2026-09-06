@@ -18,8 +18,8 @@ export function StockTable({ rows }: { rows: CurrentStockRow[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="relative w-full max-w-xs">
-        <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+      <div className="relative w-full max-w-md">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
         <TextInput
           placeholder="Search products..."
           value={query}
@@ -28,7 +28,70 @@ export function StockTable({ rows }: { rows: CurrentStockRow[] }) {
         />
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      {/* Mobile cards */}
+      <div className="space-y-3 md:hidden">
+        {filtered.map((row) => (
+          <div
+            key={row.product_id}
+            className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-base font-semibold text-gray-900">
+                  {row.product_name}
+                </p>
+                <p className="mt-0.5 text-xs text-gray-500">{row.unit || "—"}</p>
+              </div>
+              <div className="text-right">
+                {row.current_stock < 0 ? (
+                  <Badge tone="red">Over-issued</Badge>
+                ) : row.current_stock === 0 ? (
+                  <Badge tone="amber">Out of stock</Badge>
+                ) : (
+                  <Badge tone="green">In stock</Badge>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+              <div>
+                <p className="text-gray-500">Current</p>
+                <p
+                  className={
+                    row.current_stock < 0
+                      ? "text-base font-bold text-red-600"
+                      : row.current_stock === 0
+                        ? "text-base font-bold text-gray-400"
+                        : "text-base font-bold text-gray-900"
+                  }
+                >
+                  {formatQuantity(row.current_stock)}
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-500">Value</p>
+                <p className="text-base font-semibold text-gray-900">
+                  {formatCurrency(row.current_stock_value)}
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-500">Avg Cost</p>
+                <p className="text-base font-semibold text-gray-900">
+                  {formatCurrency(row.avg_cost)}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+        {filtered.length === 0 && (
+          <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-400">
+            No products found.
+          </div>
+        )}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm md:block">
         <div className="table-scroll">
           <table className="w-full whitespace-nowrap text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase text-gray-500">

@@ -10,6 +10,12 @@
   --color-foreground: var(--foreground);
 }
 
+html,
+body {
+  /* Prevent horizontal page scroll on mobile — tables scroll inside their own container */
+  overflow-x: hidden;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -21,11 +27,38 @@ body {
     Helvetica,
     Arial,
     sans-serif;
+  /* Respect device safe-area insets (iPhone notch, home indicator) */
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* iOS auto-zooms into any <input>/<select>/<textarea> whose computed font-size
+   is < 16px. Force 16px on mobile so entering a value never zooms the layout. */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }
 
 @layer utilities {
   .table-scroll {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    /* Show a subtle hint at the right edge that the table can be scrolled */
+    background:
+      linear-gradient(to right, white 30%, rgba(255, 255, 255, 0)),
+      linear-gradient(to right, rgba(255, 255, 255, 0), white 70%) 100% 0,
+      radial-gradient(farthest-side at 0 50%, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0)),
+      radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0)) 100% 0;
+    background-repeat: no-repeat;
+    background-size:
+      40px 100%,
+      40px 100%,
+      14px 100%,
+      14px 100%;
+    background-attachment: local, local, scroll, scroll;
   }
 }
