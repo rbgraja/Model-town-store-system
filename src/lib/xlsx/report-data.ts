@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
+  Category,
   DailyActivityRow,
   DepartmentReportSummaryRow,
   IncomingBatch,
@@ -41,6 +42,7 @@ export interface ReportData {
   dailyActivity: DailyActivityRow[];
   incomingRows: RawIncomingRow[];
   outgoingRows: RawOutgoingRow[];
+  categories: Category[];
 }
 
 /**
@@ -60,6 +62,7 @@ export async function fetchReportData(
     { data: departments },
     { data: incomingBatches },
     { data: outgoingEntries },
+    { data: categories },
   ] = await Promise.all([
     supabase.rpc("fn_product_report_summary", { p_from: from, p_to: to }),
     supabase.rpc("fn_department_report_summary", { p_from: from, p_to: to }),
@@ -80,6 +83,11 @@ export async function fetchReportData(
       .gte("entry_date", from)
       .lte("entry_date", to)
       .order("entry_date", { ascending: true }),
+    supabase
+      .from("categories")
+      .select("*")
+      .order("sort_order", { ascending: true })
+      .order("name", { ascending: true }),
   ]);
 
   const productMap = new Map(
@@ -126,6 +134,7 @@ export async function fetchReportData(
     dailyActivity: (dailyActivity as DailyActivityRow[]) ?? [],
     incomingRows,
     outgoingRows,
+    categories: (categories as Category[]) ?? [],
   };
 }
 
@@ -136,4 +145,55 @@ export function* dateRange(from: string, to: string): Generator<string> {
   for (let d = start; d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
     yield d.toISOString().slice(0, 10);
   }
+}
+
+/**
+ * Groups product summary rows by category, preserving the sort_order that
+ * came back from the RPC. Products with no category go into a final
+ * "Uncategorized" bucket. Every group is sorted internally by product name.
+ * Used by the xlsx generator to build category-banded sheets.
+ */
+export function groupProductsByCategory(
+  productSummary: ProductReportSummaryRow[]
+): Array<{
+  categoryId: string | null;
+  categoryName: string;
+  categoryColor: string; // 6-hex, no '#'
+  sort: number;
+  products: ProductReportSummaryRow[];
+}> {
+  const buckets = new Map<
+    string,
+    {
+      categoryId: string | null;
+      categoryName: string;
+      categoryColor: string;
+      sort: number;
+      products: ProductReportSummaryRow[];
+    }
+  >();
+
+  for (const p of productSummary) {
+    const key = p.category_id ?? "__none__";
+    const bucket = buckets.get(key);
+    if (bucket) {
+      bucket.products.push(p);
+    } else {
+      buckets.set(key, {
+        categoryId: p.category_id,
+        categoryName: p.category_name ?? "Uncategorized",
+        categoryColor: p.category_color ?? "E5E7EB",
+        sort: p.category_id ? (p.category_sort ?? 9999) : 99999,
+        products: [p],
+      });
+    }
+  }
+
+  const arr = [...buckets.values()].sort(
+    (a, b) => a.sort - b.sort || a.categoryName.localeCompare(b.categoryName)
+  );
+  for (const g of arr) {
+    g.products.sort((a, b) => a.product_name.localeCompare(b.product_name));
+  }
+  return arr;
 }

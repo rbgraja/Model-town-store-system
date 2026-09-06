@@ -2,16 +2,19 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { productFormSchema, productUpdateSchema } from "@/lib/validation";
+import {
+  categoryFormSchema,
+  categoryUpdateSchema,
+} from "@/lib/validation";
 import { errorMessage } from "@/lib/utils";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
-export async function createProduct(formData: FormData): Promise<ActionResult> {
-  const parsed = productFormSchema.safeParse({
+export async function createCategory(formData: FormData): Promise<ActionResult> {
+  const parsed = categoryFormSchema.safeParse({
     name: formData.get("name"),
-    unit: formData.get("unit"),
-    category_id: formData.get("category_id"),
+    color_hex: formData.get("color_hex"),
+    sort_order: formData.get("sort_order"),
   });
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -20,50 +23,52 @@ export async function createProduct(formData: FormData): Promise<ActionResult> {
   const supabase = await createClient();
 
   const { data: existing } = await supabase
-    .from("products")
+    .from("categories")
     .select("id")
     .ilike("name", parsed.data.name)
     .maybeSingle();
   if (existing) {
-    return { ok: false, error: "A product with that name already exists." };
+    return { ok: false, error: "A category with that name already exists." };
   }
 
-  const { error } = await supabase.rpc("fn_upsert_product", {
+  const { error } = await supabase.rpc("fn_upsert_category", {
     p_name: parsed.data.name,
-    p_unit: parsed.data.unit,
-    p_category_id: parsed.data.category_id ?? null,
+    p_color_hex: parsed.data.color_hex,
+    p_sort_order: parsed.data.sort_order,
   });
 
   if (error) return { ok: false, error: errorMessage(new Error(error.message)) };
 
+  revalidatePath("/categories");
   revalidatePath("/products");
   revalidatePath("/stock");
   return { ok: true };
 }
 
-export async function updateProduct(formData: FormData): Promise<ActionResult> {
-  const parsed = productUpdateSchema.safeParse({
+export async function updateCategory(formData: FormData): Promise<ActionResult> {
+  const parsed = categoryUpdateSchema.safeParse({
     id: formData.get("id"),
     name: formData.get("name"),
-    unit: formData.get("unit"),
+    color_hex: formData.get("color_hex"),
+    sort_order: formData.get("sort_order"),
     status: formData.get("status"),
-    category_id: formData.get("category_id"),
   });
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.rpc("fn_update_product", {
+  const { error } = await supabase.rpc("fn_update_category", {
     p_id: parsed.data.id,
     p_name: parsed.data.name,
-    p_unit: parsed.data.unit,
+    p_color_hex: parsed.data.color_hex,
+    p_sort_order: parsed.data.sort_order,
     p_status: parsed.data.status,
-    p_category_id: parsed.data.category_id ?? null,
   });
 
   if (error) return { ok: false, error: errorMessage(new Error(error.message)) };
 
+  revalidatePath("/categories");
   revalidatePath("/products");
   revalidatePath("/stock");
   return { ok: true };

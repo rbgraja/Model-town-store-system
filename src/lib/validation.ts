@@ -19,9 +19,33 @@ export const departmentUpdateSchema = departmentFormSchema.extend({
   status: z.enum(["active", "inactive"]),
 });
 
+// Optional-uuid helper: an empty string from a <select> means "no category".
+const optionalUuid = z
+  .union([z.string().uuid(), z.literal("")])
+  .transform((v) => (v === "" ? null : v))
+  .nullable()
+  .optional();
+
+const colorHex = z
+  .string()
+  .trim()
+  .regex(/^[0-9A-Fa-f]{6}$/, "Color must be 6 hex characters, no #");
+
+export const categoryFormSchema = z.object({
+  name: z.string().trim().min(1, "Category name is required").max(120),
+  color_hex: colorHex.default("E5E7EB"),
+  sort_order: z.coerce.number().int().min(0).max(9999).default(100),
+});
+
+export const categoryUpdateSchema = categoryFormSchema.extend({
+  id: z.string().uuid(),
+  status: z.enum(["active", "inactive"]),
+});
+
 export const productFormSchema = z.object({
   name: z.string().trim().min(1, "Product name is required").max(200),
   unit: z.string().trim().min(1, "Unit is required").max(40),
+  category_id: optionalUuid,
 });
 
 export const productUpdateSchema = productFormSchema.extend({

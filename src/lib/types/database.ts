@@ -15,12 +15,24 @@ export interface Department {
   updated_at: string;
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  normalized_name: string;
+  color_hex: string;   // 6-char hex, no leading '#'
+  sort_order: number;
+  status: Status;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Product {
   id: string;
   name: string;
   normalized_name: string;
   unit: string;
   status: Status;
+  category_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -87,6 +99,10 @@ export interface CurrentStockRow {
   product_name: string;
   unit: string;
   status: Status;
+  category_id: string | null;
+  category_name: string | null;
+  category_color: string | null;
+  category_sort: number;
   total_incoming_qty: number;
   total_outgoing_qty: number;
   current_stock: number;
@@ -116,6 +132,10 @@ export interface ProductReportSummaryRow {
   product_id: string;
   product_name: string;
   unit: string;
+  category_id: string | null;
+  category_name: string | null;
+  category_color: string | null;
+  category_sort: number;
   opening_qty: number;
   opening_value: number;
   incoming_qty: number;
@@ -142,6 +162,14 @@ export interface DailyActivityRow {
   product_id: string;
   incoming_qty: number;
   outgoing_qty: number;
+}
+
+export interface ProductCalendarRow {
+  entry_date: string;
+  incoming_qty: number;
+  outgoing_qty: number;
+  incoming_expense: number;
+  outgoing_expense: number;
 }
 
 export interface ArchiveYearResult {

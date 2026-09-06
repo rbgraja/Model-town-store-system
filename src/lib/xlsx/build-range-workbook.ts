@@ -1,7 +1,7 @@
 import "server-only";
 import ExcelJS from "exceljs";
 import { CURRENCY_FORMAT, QTY_FORMAT, styleHeaderRow, styleTitleRow, addTotalsRow } from "./styles";
-import { dateRange, type ReportData } from "./report-data";
+import { dateRange, groupProductsByCategory, type ReportData } from "./report-data";
 import {
   buildStoreOverviewSheet,
   buildOutwardMatrixSheet,
@@ -18,7 +18,7 @@ export function buildRangeWorkbook(
   wb.creator = "Store Management System";
   wb.created = new Date();
 
-  // 1. Store In & Out — per-product money summary + grand total
+  // 1. Store In & Out — per-product money summary + grand total (category-banded)
   buildStoreOverviewSheet(wb, data, opts);
   // 2 & 3. Day matrices for outward and inward (mirror the paper register)
   buildOutwardMatrixSheet(wb, data, opts);
@@ -65,6 +65,7 @@ function buildSummarySheet(
     ["Total Incoming Entries", data.incomingRows.length],
     ["Total Outgoing Entries", data.outgoingRows.length],
     ["Total Products", data.productSummary.length],
+    ["Total Categories", data.categories.length],
   ];
 
   for (const [label, value] of summaryRows) {
@@ -98,6 +99,29 @@ function buildSummarySheet(
   }
   addTotalsRow(sheet, "Total Department Expense", [deptGrandTotal]).getCell(2).numFmt =
     CURRENCY_FORMAT;
+
+  // Category-wise expense summary — same shape, but coloured
+  sheet.addRow([]);
+  const catHeaderRow = sheet.addRow(["Category-wise Expense Summary"]);
+  catHeaderRow.font = { bold: true, size: 12 };
+  const catTableHead = sheet.addRow(["Category", "Purchases", "Consumption", "Closing Value"]);
+  styleHeaderRow(sheet, catTableHead.number);
+  const groups = groupProductsByCategory(data.productSummary);
+  for (const g of groups) {
+    const purchases = g.products.reduce((a, p) => a + Number(p.incoming_expense), 0);
+    const consumption = g.products.reduce((a, p) => a + Number(p.outgoing_expense), 0);
+    const closing = g.products.reduce((a, p) => a + Number(p.closing_value), 0);
+    const row = sheet.addRow([g.categoryName, purchases, consumption, closing]);
+    row.getCell(1).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF" + g.categoryColor },
+    };
+    row.getCell(1).font = { bold: true };
+    row.getCell(2).numFmt = CURRENCY_FORMAT;
+    row.getCell(3).numFmt = CURRENCY_FORMAT;
+    row.getCell(4).numFmt = CURRENCY_FORMAT;
+  }
 }
 
 export function buildIncomingSheet(wb: ExcelJS.Workbook, data: ReportData) {
@@ -196,6 +220,7 @@ export function buildOutgoingSheet(wb: ExcelJS.Workbook, data: ReportData) {
 export function buildProductSummarySheet(wb: ExcelJS.Workbook, data: ReportData) {
   const sheet = wb.addWorksheet("Product Summary");
   sheet.columns = [
+    { header: "Category", key: "category", width: 22 },
     { header: "Product Name", key: "name", width: 24 },
     { header: "Unit", key: "unit", width: 10 },
     { header: "Opening Qty", key: "openingQty", width: 13 },
@@ -210,7 +235,8 @@ export function buildProductSummarySheet(wb: ExcelJS.Workbook, data: ReportData)
   styleHeaderRow(sheet);
 
   for (const r of data.productSummary) {
-    sheet.addRow({
+    const added = sheet.addRow({
+      category: r.category_name ?? "Uncategorized",
       name: r.product_name,
       unit: r.unit,
       openingQty: r.opening_qty,
@@ -222,6 +248,13 @@ export function buildProductSummarySheet(wb: ExcelJS.Workbook, data: ReportData)
       outgoingExpense: r.outgoing_expense,
       closingValue: r.closing_value,
     });
+    if (r.category_color) {
+      added.getCell(1).fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF" + r.category_color },
+      };
+    }
   }
 
   for (const key of ["openingQty", "incomingQty", "outgoingQty", "closingQty"]) {
@@ -232,18 +265,26 @@ export function buildProductSummarySheet(wb: ExcelJS.Workbook, data: ReportData)
   }
 
   if (data.productSummary.length) {
-    addTotalsRow(sheet, "Total", [
-      sum(data.productSummary, (r) => r.opening_qty),
-      sum(data.productSummary, (r) => r.incoming_qty),
-      sum(data.productSummary, (r) => r.outgoing_qty),
-      sum(data.productSummary, (r) => r.closing_qty),
-      sum(data.productSummary, (r) => r.opening_value),
-      sum(data.productSummary, (r) => r.incoming_expense),
-      sum(data.productSummary, (r) => r.outgoing_expense),
-      sum(data.productSummary, (r) => r.closing_value),
-    ], 2).eachCell((cell, colNumber) => {
-      if (colNumber >= 7) cell.numFmt = CURRENCY_FORMAT;
-      else if (colNumber >= 3) cell.numFmt = QTY_FORMAT;
+    const tot = addTotalsRow(
+      sheet,
+      "Total",
+      [
+        "",
+        "",
+        sum(data.productSummary, (r) => r.opening_qty),
+        sum(data.productSummary, (r) => r.incoming_qty),
+        sum(data.productSummary, (r) => r.outgoing_qty),
+        sum(data.productSummary, (r) => r.closing_qty),
+        sum(data.productSummary, (r) => r.opening_value),
+        sum(data.productSummary, (r) => r.incoming_expense),
+        sum(data.productSummary, (r) => r.outgoing_expense),
+        sum(data.productSummary, (r) => r.closing_value),
+      ],
+      2
+    );
+    tot.eachCell((cell, colNumber) => {
+      if (colNumber >= 8) cell.numFmt = CURRENCY_FORMAT;
+      else if (colNumber >= 4) cell.numFmt = QTY_FORMAT;
     });
   }
 }
