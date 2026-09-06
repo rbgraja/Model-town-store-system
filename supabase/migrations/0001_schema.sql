@@ -55,7 +55,11 @@ create table if not exists incoming_batches (
   entry_date         date not null,
   entry_time         time not null default '00:00',
   quantity           numeric(14,3) not null check (quantity > 0),
-  remaining_quantity numeric(14,3) not null check (remaining_quantity >= 0),
+  -- remaining_quantity may go negative: an admin-override outgoing entry is
+  -- allowed to over-draw the last FIFO batch when true stock is insufficient
+  -- (see fn_process_outgoing). A negative value is a visible "borrowed
+  -- against future stock" signal, not a data-integrity violation.
+  remaining_quantity numeric(14,3) not null,
   unit               text not null,
   total_price        numeric(14,2) not null check (total_price >= 0),
   unit_price         numeric(14,4) not null check (unit_price >= 0),
