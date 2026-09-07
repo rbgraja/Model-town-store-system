@@ -28,12 +28,15 @@ export function buildRangeWorkbook(
   // 5+. One sheet per department with its own detailed log + totals
   buildPerDepartmentSheets(wb, data, opts);
 
-  // Auxiliary analytical sheets (raw entry lists etc.)
+  // Auxiliary analytical sheets — raw entry lists and a front-page overview.
+  // "Product Summary" and "Department Summary" sheets used to be built here
+  // too, but they duplicated "Store In & Out" and "Departments Summary"
+  // above (same underlying data, just a plainer layout under a near-identical
+  // name) — removed to stop the workbook from shipping the same numbers
+  // twice under two different sheet titles.
   buildSummarySheet(wb, data, opts);
   buildIncomingSheet(wb, data);
   buildOutgoingSheet(wb, data);
-  buildProductSummarySheet(wb, data);
-  buildDepartmentSummarySheet(wb, data);
   buildDailyMovementSheet(wb, data);
 
   return wb;
@@ -214,108 +217,6 @@ export function buildOutgoingSheet(wb: ExcelJS.Workbook, data: ReportData) {
     );
     row.getCell(5).numFmt = QTY_FORMAT;
     row.getCell(8).numFmt = CURRENCY_FORMAT;
-  }
-}
-
-export function buildProductSummarySheet(wb: ExcelJS.Workbook, data: ReportData) {
-  const sheet = wb.addWorksheet("Product Summary");
-  sheet.columns = [
-    { header: "Category", key: "category", width: 22 },
-    { header: "Product Name", key: "name", width: 24 },
-    { header: "Unit", key: "unit", width: 10 },
-    { header: "Opening Qty", key: "openingQty", width: 13 },
-    { header: "Incoming Qty", key: "incomingQty", width: 13 },
-    { header: "Outgoing Qty", key: "outgoingQty", width: 13 },
-    { header: "Closing Qty", key: "closingQty", width: 13 },
-    { header: "Opening Value", key: "openingValue", width: 14 },
-    { header: "Incoming Expense", key: "incomingExpense", width: 16 },
-    { header: "Outgoing Expense", key: "outgoingExpense", width: 16 },
-    { header: "Closing Value", key: "closingValue", width: 14 },
-  ];
-  styleHeaderRow(sheet);
-
-  for (const r of data.productSummary) {
-    const added = sheet.addRow({
-      category: r.category_name ?? "Uncategorized",
-      name: r.product_name,
-      unit: r.unit,
-      openingQty: r.opening_qty,
-      incomingQty: r.incoming_qty,
-      outgoingQty: r.outgoing_qty,
-      closingQty: r.closing_qty,
-      openingValue: r.opening_value,
-      incomingExpense: r.incoming_expense,
-      outgoingExpense: r.outgoing_expense,
-      closingValue: r.closing_value,
-    });
-    if (r.category_color) {
-      added.getCell(1).fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FF" + r.category_color },
-      };
-    }
-  }
-
-  for (const key of ["openingQty", "incomingQty", "outgoingQty", "closingQty"]) {
-    sheet.getColumn(key).numFmt = QTY_FORMAT;
-  }
-  for (const key of ["openingValue", "incomingExpense", "outgoingExpense", "closingValue"]) {
-    sheet.getColumn(key).numFmt = CURRENCY_FORMAT;
-  }
-
-  if (data.productSummary.length) {
-    const tot = addTotalsRow(
-      sheet,
-      "Total",
-      [
-        "",
-        "",
-        sum(data.productSummary, (r) => r.opening_qty),
-        sum(data.productSummary, (r) => r.incoming_qty),
-        sum(data.productSummary, (r) => r.outgoing_qty),
-        sum(data.productSummary, (r) => r.closing_qty),
-        sum(data.productSummary, (r) => r.opening_value),
-        sum(data.productSummary, (r) => r.incoming_expense),
-        sum(data.productSummary, (r) => r.outgoing_expense),
-        sum(data.productSummary, (r) => r.closing_value),
-      ],
-      2
-    );
-    tot.eachCell((cell, colNumber) => {
-      if (colNumber >= 8) cell.numFmt = CURRENCY_FORMAT;
-      else if (colNumber >= 4) cell.numFmt = QTY_FORMAT;
-    });
-  }
-}
-
-export function buildDepartmentSummarySheet(wb: ExcelJS.Workbook, data: ReportData) {
-  const sheet = wb.addWorksheet("Department Summary");
-  sheet.columns = [
-    { header: "Department Name", key: "department", width: 20 },
-    { header: "Product", key: "product", width: 24 },
-    { header: "Quantity Received", key: "qty", width: 16 },
-    { header: "Expense", key: "expense", width: 14 },
-    { header: "Number of Transactions", key: "count", width: 18 },
-  ];
-  styleHeaderRow(sheet);
-
-  for (const r of data.departmentSummary) {
-    sheet.addRow({
-      department: r.department_name,
-      product: r.product_name,
-      qty: r.quantity,
-      expense: r.expense,
-      count: r.transaction_count,
-    });
-  }
-  sheet.getColumn("qty").numFmt = QTY_FORMAT;
-  sheet.getColumn("expense").numFmt = CURRENCY_FORMAT;
-
-  const totalExpense = sum(data.departmentSummary, (r) => r.expense);
-  if (data.departmentSummary.length) {
-    addTotalsRow(sheet, "Total Department Expense", ["", totalExpense], 3).getCell(4).numFmt =
-      CURRENCY_FORMAT;
   }
 }
 

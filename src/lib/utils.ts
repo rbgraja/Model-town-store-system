@@ -112,6 +112,11 @@ export function humanizeDbError(message: string): string {
     CANNOT_ARCHIVE_CURRENT_OR_FUTURE_YEAR:
       "You can only archive a year that has fully ended.",
     INVALID_YEAR: "Invalid year.",
+    OUTGOING_QUANTITY_MUST_BE_POSITIVE: "Outgoing quantity must be greater than 0.",
+    OUTGOING_EXCEEDS_INCOMING: "Outgoing quantity cannot be greater than the incoming quantity.",
+    ITEMS_REQUIRED: "Add at least one product before saving.",
+    ITEM_PRODUCT_REQUIRED: "Every row needs a product selected.",
+    ITEM_QUANTITY_MUST_BE_POSITIVE: "Every row needs a quantity greater than 0.",
   };
   return map[code ?? ""] ?? message;
 }

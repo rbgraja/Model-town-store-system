@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { Fragment, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -20,11 +20,52 @@ export interface OutgoingRow {
   notes: string | null;
   is_override: boolean;
   is_void: boolean;
+  batch_id: string | null;
+}
+
+interface RowGroup {
+  key: string;
+  isBulkBatch: boolean;
+  rows: OutgoingRow[];
+}
+
+// Rows created together by the bulk outgoing form share a batch_id — group
+// them here purely for display ("Kitchen — Sep 7, 2026 · 5 items") so it's
+// visually obvious they were saved as one batch, not five separate entries.
+function groupByBatch(rows: OutgoingRow[]): RowGroup[] {
+  const groups: RowGroup[] = [];
+  const indexByKey = new Map<string, number>();
+  for (const r of rows) {
+    const key = r.batch_id ?? r.id;
+    let idx = indexByKey.get(key);
+    if (idx === undefined) {
+      idx = groups.length;
+      indexByKey.set(key, idx);
+      groups.push({ key, isBulkBatch: Boolean(r.batch_id), rows: [] });
+    }
+    groups[idx].rows.push(r);
+  }
+  return groups;
+}
+
+function BatchHeader({ group }: { group: RowGroup }) {
+  if (!group.isBulkBatch || group.rows.length < 2) return null;
+  const first = group.rows[0];
+  const totalCost = group.rows.reduce((a, r) => a + r.total_cost, 0);
+  return (
+    <div className="flex items-center justify-between rounded-md bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-800">
+      <span>
+        {first.department_name} — {formatDate(first.entry_date)} · {group.rows.length} items
+      </span>
+      <span>{formatCurrency(totalCost)}</span>
+    </div>
+  );
 }
 
 export function OutgoingTable({ rows }: { rows: OutgoingRow[] }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
+  const groups = groupByBatch(rows);
 
   function handleVoid(formData: FormData) {
     startTransition(async () => {
@@ -42,8 +83,11 @@ export function OutgoingTable({ rows }: { rows: OutgoingRow[] }) {
     <>
       {/* Mobile: card list — one card per entry, easy to read with a thumb */}
       <div className="space-y-3 md:hidden">
-        {rows.map((r) => (
-          <div
+        {groups.map((group) => (
+          <div key={group.key} className="space-y-2">
+            <BatchHeader group={group} />
+            {group.rows.map((r) => (
+        <div
             key={r.id}
             className={`rounded-xl border border-gray-200 bg-white p-4 shadow-sm ${
               r.is_void ? "opacity-60" : ""
@@ -93,6 +137,8 @@ export function OutgoingTable({ rows }: { rows: OutgoingRow[] }) {
               </div>
             )}
           </div>
+            ))}
+          </div>
         ))}
         {rows.length === 0 && (
           <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-400">
@@ -119,7 +165,16 @@ export function OutgoingTable({ rows }: { rows: OutgoingRow[] }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {rows.map((r) => (
+              {groups.map((group) => (
+                <Fragment key={group.key}>
+                  {group.isBulkBatch && group.rows.length >= 2 && (
+                    <tr>
+                      <td colSpan={9} className="bg-blue-50 px-4 py-1.5">
+                        <BatchHeader group={group} />
+                      </td>
+                    </tr>
+                  )}
+                  {group.rows.map((r) => (
                 <tr key={r.id} className={r.is_void ? "opacity-50" : undefined}>
                   <td className="px-4 py-3">{formatDate(r.entry_date)}</td>
                   <td className="px-4 py-3 text-gray-500">{formatTime(r.entry_time)}</td>
@@ -162,6 +217,8 @@ export function OutgoingTable({ rows }: { rows: OutgoingRow[] }) {
                     </div>
                   </td>
                 </tr>
+                  ))}
+                </Fragment>
               ))}
               {rows.length === 0 && (
                 <tr>

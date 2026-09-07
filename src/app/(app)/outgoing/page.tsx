@@ -65,6 +65,7 @@ export default async function OutgoingPage({
     notes: e.notes,
     is_override: e.is_override,
     is_void: e.is_void,
+    batch_id: e.batch_id,
   }));
 
   return (

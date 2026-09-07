@@ -3,13 +3,7 @@ import ExcelJS from "exceljs";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ProductReportSummaryRow } from "@/lib/types/database";
 import { fetchReportData, type ReportData } from "./report-data";
-import {
-  buildIncomingSheet,
-  buildOutgoingSheet,
-  buildProductSummarySheet,
-  buildDepartmentSummarySheet,
-  sum,
-} from "./build-range-workbook";
+import { buildIncomingSheet, buildOutgoingSheet, sum } from "./build-range-workbook";
 import {
   buildStoreOverviewSheet,
   buildDepartmentsSummarySheet,
@@ -62,14 +56,14 @@ export async function buildYearlyWorkbook(
     title: `Yearly Store Report — ${year}`,
     periodLabel: `${year}`,
   };
-  // Same operator-facing structure as the range/monthly workbook:
+  // Same operator-facing structure as the range/monthly workbook. No
+  // "Product Summary" / "Department Summary" sheets here — they duplicated
+  // "Store In & Out" and "Departments Summary" (see build-range-workbook.ts).
   buildStoreOverviewSheet(wb, data, yearOpts);
   buildYearlySummarySheet(wb, data, monthly, year);
   buildMonthlySummarySheet(wb, monthly, year);
-  buildProductSummarySheet(wb, data);
   buildDepartmentsSummarySheet(wb, data, yearOpts);
   buildPerDepartmentSheets(wb, data, yearOpts);
-  buildDepartmentSummarySheet(wb, data);
   buildIncomingSheet(wb, data);
   buildOutgoingSheet(wb, data);
   buildMonthlyMovementSheet(wb, monthly);

@@ -4,10 +4,14 @@ import { IncomingForm } from "../incoming-form";
 
 export default async function NewIncomingPage() {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("products")
-    .select("name, unit")
-    .order("name", { ascending: true });
+  const [{ data }, { data: departments }] = await Promise.all([
+    supabase.from("products").select("name, unit").order("name", { ascending: true }),
+    supabase
+      .from("departments")
+      .select("id, name")
+      .eq("status", "active")
+      .order("name", { ascending: true }),
+  ]);
 
   return (
     <div>
@@ -15,7 +19,11 @@ export default async function NewIncomingPage() {
         title="Add Incoming Entry"
         description="Record a purchase of grocery or store material."
       />
-      <IncomingForm mode="create" productSuggestions={data ?? []} />
+      <IncomingForm
+        mode="create"
+        productSuggestions={data ?? []}
+        departments={(departments as { id: string; name: string }[]) ?? []}
+      />
     </div>
   );
 }

@@ -81,6 +81,28 @@ export const outgoingEntrySchema = z.object({
   allowOverride: z.coerce.boolean().default(false),
 });
 
+export const incomingWithOutgoingSchema = incomingEntrySchema.extend({
+  departmentId: z.string().uuid("Select a department"),
+  outgoingQuantity: z.coerce.number().positive("Outgoing quantity must be greater than 0"),
+}).refine((v) => v.outgoingQuantity <= v.quantity, {
+  message: "Outgoing quantity cannot be greater than the incoming quantity",
+  path: ["outgoingQuantity"],
+});
+
+export const bulkOutgoingItemSchema = z.object({
+  productId: z.string().uuid("Select a product"),
+  quantity: z.coerce.number().positive("Quantity must be greater than 0"),
+});
+
+export const bulkOutgoingEntrySchema = z.object({
+  departmentId: z.string().uuid("Select a department"),
+  entryDate: dateString,
+  entryTime: timeString,
+  notes: z.string().trim().max(500).optional().nullable(),
+  allowOverride: z.coerce.boolean().default(false),
+  items: z.array(bulkOutgoingItemSchema).min(1, "Add at least one product"),
+});
+
 export const voidReasonSchema = z.object({
   id: z.string().uuid(),
   reason: z.string().trim().min(1, "A reason is required").max(500),

@@ -68,6 +68,7 @@ export interface OutgoingEntry {
   is_override: boolean;
   is_void: boolean;
   void_reason: string | null;
+  batch_id: string | null;
   created_at: string;
   updated_at: string;
 }
