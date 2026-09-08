@@ -261,7 +261,7 @@ export function BulkIncomingForm({
       <div>
         <p className="text-sm font-medium text-gray-700">2. Products</p>
         <div className="mt-2 space-y-3">
-          {rows.map((row, idx) => {
+          {rows.map((row) => {
             const outgoingExceeds =
               Number(row.outgoingQuantity) > 0 &&
               Number(row.outgoingQuantity) > Number(row.quantity);
@@ -275,7 +275,7 @@ export function BulkIncomingForm({
                 className="rounded-lg border border-gray-200 p-3 sm:p-4"
               >
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <Field label={idx === 0 ? "Product Name" : undefined} htmlFor={`${row.key}-name`}>
+                  <Field label="Product Name" htmlFor={`${row.key}-name`}>
                     <TextInput
                       id={`${row.key}-name`}
                       list={`${formId}-product-suggestions`}
@@ -289,7 +289,7 @@ export function BulkIncomingForm({
                     />
                   </Field>
 
-                  <Field label={idx === 0 ? "Unit" : undefined} htmlFor={`${row.key}-unit`}>
+                  <Field label="Unit" htmlFor={`${row.key}-unit`}>
                     <SelectInput
                       id={`${row.key}-unit`}
                       value={row.unit}
@@ -303,7 +303,7 @@ export function BulkIncomingForm({
                     </SelectInput>
                   </Field>
 
-                  <Field label={idx === 0 ? "Quantity" : undefined} htmlFor={`${row.key}-qty`}>
+                  <Field label="Quantity" htmlFor={`${row.key}-qty`}>
                     <TextInput
                       id={`${row.key}-qty`}
                       type="number"
@@ -314,7 +314,7 @@ export function BulkIncomingForm({
                     />
                   </Field>
 
-                  <Field label={idx === 0 ? "Total Price" : undefined} htmlFor={`${row.key}-total`}>
+                  <Field label="Total Price" htmlFor={`${row.key}-total`}>
                     <TextInput
                       id={`${row.key}-total`}
                       type="number"
@@ -326,9 +326,9 @@ export function BulkIncomingForm({
                   </Field>
 
                   <Field
-                    label={idx === 0 ? "Price Per Unit" : undefined}
+                    label="Price Per Unit"
                     htmlFor={`${row.key}-unitPrice`}
-                    hint={idx === 0 ? "Auto-calculated — edit to override." : undefined}
+                    hint="Auto-calculated — edit to override."
                   >
                     <TextInput
                       id={`${row.key}-unitPrice`}
@@ -344,7 +344,7 @@ export function BulkIncomingForm({
 
                   {withOutgoing && (
                     <Field
-                      label={idx === 0 ? "Send Out Now (optional)" : undefined}
+                      label="Send Out Now (optional)"
                       htmlFor={`${row.key}-outQty`}
                       hint={
                         remaining !== null
