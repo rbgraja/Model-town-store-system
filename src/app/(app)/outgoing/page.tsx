@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { FilterBar } from "@/components/filters/filter-bar";
 import { OutgoingTable, type OutgoingRow } from "./outgoing-table";
-import type { Department, OutgoingEntry, Product } from "@/lib/types/database";
+import { getStockStatus } from "@/lib/stock";
+import type { Category, CurrentStockRow, Department, OutgoingEntry, Product } from "@/lib/types/database";
 
 const PAGE_SIZE = 25;
 
@@ -18,17 +19,28 @@ export default async function OutgoingPage({
     department?: string;
     from?: string;
     to?: string;
+    category?: string;
+    stock?: string;
+    q?: string;
     page?: string;
   }>;
 }) {
-  const { product, department, from, to, page } = await searchParams;
+  const { product, department, from, to, category, stock, q, page } = await searchParams;
   const currentPage = Math.max(1, Number(page) || 1);
   const supabase = await createClient();
 
-  const [{ data: products }, { data: departments }] = await Promise.all([
-    supabase.from("products").select("id, name, unit").order("name", { ascending: true }),
-    supabase.from("departments").select("id, name").order("name", { ascending: true }),
-  ]);
+  const [{ data: products }, { data: departments }, { data: categories }, { data: stockRows }] =
+    await Promise.all([
+      supabase.from("products").select("id, name, unit").order("name", { ascending: true }),
+      supabase.from("departments").select("id, name").order("name", { ascending: true }),
+      supabase
+        .from("categories")
+        .select("*")
+        .eq("status", "active")
+        .order("sort_order", { ascending: true })
+        .order("name", { ascending: true }),
+      supabase.rpc("fn_current_stock"),
+    ]);
 
   let query = supabase
     .from("outgoing_entries")
@@ -40,6 +52,57 @@ export default async function OutgoingPage({
   if (department) query = query.eq("department_id", department);
   if (from) query = query.gte("entry_date", from);
   if (to) query = query.lte("entry_date", to);
+
+  // Category / stock-status / search filter to a set of matching product
+  // ids first (current stock + category live on the product, not on each
+  // outgoing row), then restrict the outgoing query to that set. These are
+  // ordinary, optional, non-sticky URL params — the default with none set
+  // is "every product", same as today.
+  if (category || stock || q) {
+    const qLower = q?.trim().toLowerCase();
+    const matchingIds = ((stockRows as CurrentStockRow[]) ?? [])
+      .filter((r) => {
+        if (category) {
+          if (category === "__none__") {
+            if (r.category_id) return false;
+          } else if (r.category_id !== category) return false;
+        }
+        if (stock && getStockStatus(Number(r.current_stock)) !== stock) return false;
+        if (qLower && !r.product_name.toLowerCase().includes(qLower)) return false;
+        return true;
+      })
+      .map((r) => r.product_id);
+
+    // No product matches the combined filters — short-circuit to an empty
+    // result instead of sending `.in()` an empty array (which some
+    // PostgREST versions treat as "no filter" rather than "match nothing").
+    if (matchingIds.length === 0) {
+      return (
+        <div>
+          <PageHeader
+            title="Outgoing"
+            description="Stock issued to departments."
+            action={
+              <Link href="/outgoing/new">
+                <Button>
+                  <Plus className="h-4 w-4" /> Add Outgoing
+                </Button>
+              </Link>
+            }
+          />
+          <FilterBar
+            basePath="/outgoing"
+            products={(products as { id: string; name: string }[]) ?? []}
+            departments={(departments as { id: string; name: string }[]) ?? []}
+            categories={(categories as Category[]) ?? []}
+          />
+          <OutgoingTable rows={[]} />
+        </div>
+      );
+    }
+
+    query = query.in("product_id", matchingIds);
+  }
 
   const rangeStart = (currentPage - 1) * PAGE_SIZE;
   query = query.range(rangeStart, rangeStart + PAGE_SIZE - 1);
@@ -85,6 +148,7 @@ export default async function OutgoingPage({
         basePath="/outgoing"
         products={(products as { id: string; name: string }[]) ?? []}
         departments={(departments as { id: string; name: string }[]) ?? []}
+        categories={(categories as Category[]) ?? []}
       />
       <OutgoingTable rows={rows} />
       <Pagination

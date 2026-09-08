@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronDown, X } from "lucide-react";
+import { ChevronDown, Search, X } from "lucide-react";
 import { SelectInput, TextInput } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 
@@ -10,14 +10,22 @@ export function FilterBar({
   basePath,
   products,
   departments,
+  categories,
 }: {
   basePath: string;
   products: { id: string; name: string }[];
   departments?: { id: string; name: string }[];
+  /** Optional — only the Outgoing list passes this. Turns on the Category,
+   * Stock status and Search filters alongside the ones above. These are
+   * plain URL search params like the rest of this bar: optional, combine
+   * freely, and are never a permanent/sticky preference — "Clear filters"
+   * (or just navigating away) always returns to "All Categories" / "All". */
+  categories?: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [q, setQ] = useState(searchParams.get("q") ?? "");
 
   function update(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -27,12 +35,24 @@ export function FilterBar({
     router.push(`${basePath}?${params.toString()}`);
   }
 
+  // Debounce the free-text search so every keystroke doesn't push a new URL
+  // (and re-run the server-side query) — 350ms after the user stops typing.
+  useEffect(() => {
+    if (!categories) return;
+    const current = searchParams.get("q") ?? "";
+    if (q === current) return;
+    const timer = setTimeout(() => update("q", q), 350);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q]);
+
   function clearAll() {
+    setQ("");
     router.push(basePath);
   }
 
-  const activeCount = ["product", "department", "from", "to"].filter((k) =>
-    searchParams.get(k)
+  const activeCount = ["product", "department", "from", "to", "category", "stock", "q"].filter(
+    (k) => searchParams.get(k)
   ).length;
 
   const body = (
@@ -94,6 +114,50 @@ export function FilterBar({
           onChange={(e) => update("to", e.target.value)}
         />
       </div>
+
+      {categories && (
+        <>
+          <div className="w-full md:w-52">
+            <label className="mb-1 block text-xs font-medium text-gray-500">Category</label>
+            <SelectInput
+              value={searchParams.get("category") ?? ""}
+              onChange={(e) => update("category", e.target.value)}
+            >
+              <option value="">All Categories</option>
+              <option value="__none__">— Uncategorized —</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </SelectInput>
+          </div>
+
+          <div className="w-full md:w-44">
+            <label className="mb-1 block text-xs font-medium text-gray-500">Stock</label>
+            <SelectInput
+              value={searchParams.get("stock") ?? ""}
+              onChange={(e) => update("stock", e.target.value)}
+            >
+              <option value="">All</option>
+              <option value="in_stock">In Stock</option>
+              <option value="low_stock">Low Stock</option>
+              <option value="out_of_stock">Out of Stock</option>
+            </SelectInput>
+          </div>
+
+          <div className="relative w-full md:w-56">
+            <label className="mb-1 block text-xs font-medium text-gray-500">Search</label>
+            <Search className="pointer-events-none absolute left-3 top-[calc(50%+0.5rem)] h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <TextInput
+              placeholder="Search product…"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+        </>
+      )}
 
       {activeCount > 0 && (
         <div className="w-full sm:col-span-2 md:w-auto">

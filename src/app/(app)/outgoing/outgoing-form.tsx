@@ -3,10 +3,12 @@
 import { useEffect, useId, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { AlertTriangle, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, Plus, Search, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, SelectInput, TextInput, TextareaInput } from "@/components/ui/field";
+import { Badge } from "@/components/ui/badge";
 import { formatQuantity, todayISODate, nowTimeString } from "@/lib/utils";
+import { getStockStatus, STOCK_STATUS_LABELS, type StockStatus } from "@/lib/stock";
 import { createBulkOutgoingEntries } from "./actions";
 import { getOutgoingSummaryForDepartmentDate } from "./data-actions";
 
@@ -15,12 +17,25 @@ export interface ProductOption {
   name: string;
   unit: string;
   currentStock: number;
+  categoryId: string | null;
+  categoryName?: string | null;
 }
 
 export interface DepartmentOption {
   id: string;
   name: string;
 }
+
+export interface CategoryOption {
+  id: string;
+  name: string;
+}
+
+const STOCK_BADGE_TONE: Record<StockStatus, "green" | "amber" | "red"> = {
+  in_stock: "green",
+  low_stock: "amber",
+  out_of_stock: "red",
+};
 
 interface Row {
   key: string;
@@ -35,9 +50,11 @@ function emptyRow(): Row {
 export function OutgoingForm({
   products,
   departments,
+  categories,
 }: {
   products: ProductOption[];
   departments: DepartmentOption[];
+  categories: CategoryOption[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -55,7 +72,48 @@ export function OutgoingForm({
     products: string[];
   } | null>(null);
 
+  // Product-picker filters — purely local UI state, optional, and never
+  // persisted: "All Categories" / "All" stock / empty search is always the
+  // default whenever this form mounts. They only narrow which products show
+  // up as <option>s below; they never gate which products can be selected.
+  const [productCategory, setProductCategory] = useState("");
+  const [productStock, setProductStock] = useState("");
+  const [productSearch, setProductSearch] = useState("");
+
   const productMap = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
+
+  const filteredProducts = useMemo(() => {
+    const q = productSearch.trim().toLowerCase();
+    return products.filter((p) => {
+      if (productCategory) {
+        if (productCategory === "__none__") {
+          if (p.categoryId) return false;
+        } else if (p.categoryId !== productCategory) return false;
+      }
+      if (productStock && getStockStatus(p.currentStock) !== productStock) return false;
+      if (q && !p.name.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [products, productCategory, productStock, productSearch]);
+
+  const productFiltersActive = Boolean(productCategory || productStock || productSearch);
+
+  function clearProductFilters() {
+    setProductCategory("");
+    setProductStock("");
+    setProductSearch("");
+  }
+
+  // A row's own already-selected product must stay visible in its <select>
+  // even if it no longer matches the active filters — filters narrow future
+  // choices, they never hide or unset a choice already made.
+  function optionsForRow(selectedProductId: string): ProductOption[] {
+    if (!selectedProductId || filteredProducts.some((p) => p.id === selectedProductId)) {
+      return filteredProducts;
+    }
+    const selected = productMap.get(selectedProductId);
+    return selected ? [selected, ...filteredProducts] : filteredProducts;
+  }
 
   // Aggregate requested quantity per product across every row, so stock
   // checks account for the same product appearing on more than one row.
@@ -221,6 +279,65 @@ export function OutgoingForm({
       {/* Step 3: product rows */}
       <div>
         <p className="text-sm font-medium text-gray-700">3. Products</p>
+
+        {/* Optional, temporary filters — narrow the <select> options below.
+            Category is never mandatory and never sticky: this state lives
+            only in this component and resets whenever the form remounts. */}
+        <div className="mt-2 flex flex-col gap-2 rounded-lg border border-gray-100 bg-gray-50 p-3 sm:flex-row sm:flex-wrap sm:items-end">
+          <div className="w-full sm:w-52">
+            <label className="mb-1 block text-xs font-medium text-gray-500">Category</label>
+            <SelectInput
+              value={productCategory}
+              onChange={(e) => setProductCategory(e.target.value)}
+            >
+              <option value="">All Categories</option>
+              <option value="__none__">— Uncategorized —</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </SelectInput>
+          </div>
+
+          <div className="w-full sm:w-44">
+            <label className="mb-1 block text-xs font-medium text-gray-500">Stock</label>
+            <SelectInput value={productStock} onChange={(e) => setProductStock(e.target.value)}>
+              <option value="">All</option>
+              <option value="in_stock">In Stock</option>
+              <option value="low_stock">Low Stock</option>
+              <option value="out_of_stock">Out of Stock</option>
+            </SelectInput>
+          </div>
+
+          <div className="relative w-full sm:w-56">
+            <label className="mb-1 block text-xs font-medium text-gray-500">Search</label>
+            <Search className="pointer-events-none absolute left-3 top-[calc(50%+0.5rem)] h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <TextInput
+              placeholder="Search product…"
+              value={productSearch}
+              onChange={(e) => setProductSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
+          {productFiltersActive && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={clearProductFilters}
+              className="w-full sm:w-auto"
+            >
+              <X className="h-3.5 w-3.5" /> Clear Filters
+            </Button>
+          )}
+
+          <p className="w-full text-xs text-gray-400">
+            {filteredProducts.length} of {products.length} products shown
+          </p>
+        </div>
+
         <div className="mt-2 space-y-2">
           {rows.map((row, idx) => {
             const product = productMap.get(row.productId);
@@ -230,6 +347,7 @@ export function OutgoingForm({
               : 0;
             const rowInsufficient =
               product !== undefined && rowRequested > 0 && rowRequested > product.currentStock;
+            const rowStockStatus = product ? getStockStatus(product.currentStock) : null;
             return (
               <div
                 key={row.key}
@@ -242,15 +360,18 @@ export function OutgoingForm({
                     onChange={(e) => updateRow(row.key, { productId: e.target.value })}
                   >
                     <option value="">Select a product…</option>
-                    {products.map((p) => (
+                    {optionsForRow(row.productId).map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.name}
                       </option>
                     ))}
                   </SelectInput>
-                  {product && (
-                    <p className="mt-1 text-xs text-gray-500">
+                  {product && rowStockStatus && (
+                    <p className="mt-1 flex items-center gap-1.5 text-xs text-gray-500">
                       Available: {formatQuantity(product.currentStock, product.unit)}
+                      <Badge tone={STOCK_BADGE_TONE[rowStockStatus]}>
+                        {STOCK_STATUS_LABELS[rowStockStatus]}
+                      </Badge>
                     </p>
                   )}
                   {isDuplicate && (
@@ -258,7 +379,15 @@ export function OutgoingForm({
                   )}
                 </Field>
 
-                <Field label={idx === 0 ? "Quantity" : undefined} htmlFor={`${row.key}-qty`}>
+                <Field
+                  label={idx === 0 ? "Quantity" : undefined}
+                  htmlFor={`${row.key}-qty`}
+                  error={
+                    rowInsufficient && product
+                      ? `Only ${formatQuantity(product.currentStock, product.unit)} available`
+                      : undefined
+                  }
+                >
                   <TextInput
                     id={`${row.key}-qty`}
                     type="number"
