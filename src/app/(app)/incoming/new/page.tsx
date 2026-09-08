@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/ui/page-header";
-import { IncomingForm } from "../incoming-form";
+import { BulkIncomingForm } from "../bulk-incoming-form";
 
 export default async function NewIncomingPage() {
   const supabase = await createClient();
@@ -17,10 +17,9 @@ export default async function NewIncomingPage() {
     <div>
       <PageHeader
         title="Add Incoming Entry"
-        description="Record a purchase of grocery or store material."
+        description="Record one or more purchases of grocery or store material for the same date."
       />
-      <IncomingForm
-        mode="create"
+      <BulkIncomingForm
         productSuggestions={data ?? []}
         departments={(departments as { id: string; name: string }[]) ?? []}
       />

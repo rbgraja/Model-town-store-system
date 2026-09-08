@@ -64,6 +64,7 @@ export default async function IncomingPage({
     is_void: b.is_void,
     void_reason: b.void_reason,
     fully_untouched: Number(b.remaining_quantity) === Number(b.quantity),
+    batch_id: b.batch_id,
   }));
 
   return (

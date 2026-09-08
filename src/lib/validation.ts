@@ -71,24 +71,6 @@ export const incomingUpdateSchema = incomingEntrySchema
     id: z.string().uuid(),
   });
 
-export const outgoingEntrySchema = z.object({
-  productId: z.string().uuid("Select a product"),
-  departmentId: z.string().uuid("Select a department"),
-  quantity: z.coerce.number().positive("Quantity must be greater than 0"),
-  entryDate: dateString,
-  entryTime: timeString,
-  notes: z.string().trim().max(500).optional().nullable(),
-  allowOverride: z.coerce.boolean().default(false),
-});
-
-export const incomingWithOutgoingSchema = incomingEntrySchema.extend({
-  departmentId: z.string().uuid("Select a department"),
-  outgoingQuantity: z.coerce.number().positive("Outgoing quantity must be greater than 0"),
-}).refine((v) => v.outgoingQuantity <= v.quantity, {
-  message: "Outgoing quantity cannot be greater than the incoming quantity",
-  path: ["outgoingQuantity"],
-});
-
 export const bulkOutgoingItemSchema = z.object({
   productId: z.string().uuid("Select a product"),
   quantity: z.coerce.number().positive("Quantity must be greater than 0"),
@@ -102,6 +84,39 @@ export const bulkOutgoingEntrySchema = z.object({
   allowOverride: z.coerce.boolean().default(false),
   items: z.array(bulkOutgoingItemSchema).min(1, "Add at least one product"),
 });
+
+export const bulkIncomingItemSchema = z
+  .object({
+    productName: z.string().trim().min(1, "Product name is required").max(200),
+    unit: z.string().trim().min(1, "Unit is required").max(40),
+    quantity: z.coerce.number().positive("Quantity must be greater than 0"),
+    totalPrice: z.coerce.number().nonnegative("Total price cannot be negative"),
+    unitPrice: z.coerce.number().nonnegative("Unit price is invalid"),
+    receiptUrl: z.string().url().optional().nullable(),
+    receiptPath: z.string().optional().nullable(),
+    // Optional: how much of THIS incoming item should go straight out to
+    // the batch's shared department. 0/undefined means "keep it all in stock".
+    outgoingQuantity: z.coerce.number().nonnegative().optional().nullable(),
+  })
+  .refine((v) => !v.outgoingQuantity || v.outgoingQuantity <= v.quantity, {
+    message: "Outgoing quantity cannot be greater than the incoming quantity",
+    path: ["outgoingQuantity"],
+  });
+
+export const bulkIncomingEntrySchema = z
+  .object({
+    entryDate: dateString,
+    entryTime: timeString,
+    departmentId: z.union([z.string().uuid(), z.literal("")]).optional(),
+    items: z.array(bulkIncomingItemSchema).min(1, "Add at least one product"),
+  })
+  .refine(
+    (v) => v.departmentId || v.items.every((i) => !i.outgoingQuantity),
+    {
+      message: "Select a department to send any of these products out",
+      path: ["departmentId"],
+    }
+  );
 
 export const voidReasonSchema = z.object({
   id: z.string().uuid(),
@@ -128,4 +143,3 @@ export const archiveYearSchema = z.object({
 });
 
 export type IncomingEntryInput = z.infer<typeof incomingEntrySchema>;
-export type OutgoingEntryInput = z.infer<typeof outgoingEntrySchema>;

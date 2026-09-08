@@ -33,8 +33,6 @@ export default async function EditIncomingPage({
         description="Price, date and receipt can be corrected. Quantity cannot be lowered below what has already been issued."
       />
       <IncomingForm
-        mode="edit"
-        productSuggestions={[]}
         initial={{
           id: (batch as IncomingBatch).id,
           productName: (product as Product | null)?.name ?? "",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { Fragment, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -24,11 +24,52 @@ export interface IncomingRow {
   is_void: boolean;
   void_reason: string | null;
   fully_untouched: boolean;
+  batch_id: string | null;
+}
+
+interface RowGroup {
+  key: string;
+  isBulkBatch: boolean;
+  rows: IncomingRow[];
+}
+
+// Rows created together by the bulk incoming form share a batch_id — group
+// them here purely for display ("Sep 7, 2026 · 5 items") so it's visually
+// obvious they were saved as one purchase, not five separate entries.
+function groupByBatch(rows: IncomingRow[]): RowGroup[] {
+  const groups: RowGroup[] = [];
+  const indexByKey = new Map<string, number>();
+  for (const r of rows) {
+    const key = r.batch_id ?? r.id;
+    let idx = indexByKey.get(key);
+    if (idx === undefined) {
+      idx = groups.length;
+      indexByKey.set(key, idx);
+      groups.push({ key, isBulkBatch: Boolean(r.batch_id), rows: [] });
+    }
+    groups[idx].rows.push(r);
+  }
+  return groups;
+}
+
+function BatchHeader({ group }: { group: RowGroup }) {
+  if (!group.isBulkBatch || group.rows.length < 2) return null;
+  const first = group.rows[0];
+  const totalPrice = group.rows.reduce((a, r) => a + r.total_price, 0);
+  return (
+    <div className="flex items-center justify-between rounded-md bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-800">
+      <span>
+        {formatDate(first.entry_date)} · {group.rows.length} items
+      </span>
+      <span>{formatCurrency(totalPrice)}</span>
+    </div>
+  );
 }
 
 export function IncomingTable({ rows }: { rows: IncomingRow[] }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
+  const groups = groupByBatch(rows);
 
   function handleVoid(formData: FormData) {
     startTransition(async () => {
@@ -46,7 +87,10 @@ export function IncomingTable({ rows }: { rows: IncomingRow[] }) {
     <>
       {/* Mobile card list */}
       <div className="space-y-3 md:hidden">
-        {rows.map((r) => (
+        {groups.map((group) => (
+          <div key={group.key} className="space-y-2">
+            <BatchHeader group={group} />
+            {group.rows.map((r) => (
           <div
             key={r.id}
             className={`rounded-xl border border-gray-200 bg-white p-4 shadow-sm ${
@@ -129,6 +173,8 @@ export function IncomingTable({ rows }: { rows: IncomingRow[] }) {
               </div>
             )}
           </div>
+            ))}
+          </div>
         ))}
         {rows.length === 0 && (
           <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-400">
@@ -154,7 +200,16 @@ export function IncomingTable({ rows }: { rows: IncomingRow[] }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {rows.map((r) => (
+              {groups.map((group) => (
+                <Fragment key={group.key}>
+                  {group.isBulkBatch && group.rows.length >= 2 && (
+                    <tr>
+                      <td colSpan={8} className="bg-blue-50 px-4 py-1.5">
+                        <BatchHeader group={group} />
+                      </td>
+                    </tr>
+                  )}
+                  {group.rows.map((r) => (
                 <tr key={r.id} className={r.is_void ? "opacity-50" : undefined}>
                   <td className="px-4 py-3">{formatDate(r.entry_date)}</td>
                   <td className="px-4 py-3 text-gray-500">{formatTime(r.entry_time)}</td>
@@ -207,6 +262,8 @@ export function IncomingTable({ rows }: { rows: IncomingRow[] }) {
                     </div>
                   </td>
                 </tr>
+                  ))}
+                </Fragment>
               ))}
               {rows.length === 0 && (
                 <tr>

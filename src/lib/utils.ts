@@ -119,6 +119,7 @@ export function humanizeDbError(message: string): string {
     ITEMS_REQUIRED: "Add at least one product before saving.",
     ITEM_PRODUCT_REQUIRED: "Every row needs a product selected.",
     ITEM_QUANTITY_MUST_BE_POSITIVE: "Every row needs a quantity greater than 0.",
+    DEPARTMENT_REQUIRED_FOR_OUTGOING: "Select a department to send any of these products out.",
   };
   return map[code ?? ""] ?? message;
 }

@@ -51,6 +51,7 @@ export interface IncomingBatch {
   receipt_path: string | null;
   is_void: boolean;
   void_reason: string | null;
+  batch_id: string | null;
   created_at: string;
   updated_at: string;
 }
