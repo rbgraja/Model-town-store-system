@@ -48,7 +48,10 @@ function buildSummarySheet(
   opts: { title: string; periodLabel: string }
 ) {
   const sheet = wb.addWorksheet("Summary");
-  sheet.columns = [{ width: 32 }, { width: 22 }];
+  // Column A/B carry the top KPI list and the 2-column Department table;
+  // C/D are only used by the 4-column Category-wise table further down —
+  // give them a real width too, or Excel clips "Rs. 58,500.00" to "######".
+  sheet.columns = [{ width: 32 }, { width: 22 }, { width: 18 }, { width: 18 }];
 
   sheet.addRow([opts.title]);
   styleTitleRow(sheet, 1);
@@ -164,7 +167,11 @@ export function buildIncomingSheet(wb: ExcelJS.Workbook, data: ReportData) {
   sheet.getColumn("totalPrice").numFmt = CURRENCY_FORMAT;
 
   if (data.incomingRows.length) {
-    const row = addTotalsRow(sheet, "Total", ["", "", "", totalQty, "", totalPrice, "", ""], 3);
+    // Columns are Date,Time,Product,Unit,Quantity,PerUnitPrice,TotalPrice,
+    // Receipt,EntryID — label spans cols 1-3, so values[] starts at col 4
+    // (Unit) and must line up totalQty under Quantity (col 5) and
+    // totalPrice under Total Price (col 7).
+    const row = addTotalsRow(sheet, "Total", ["", totalQty, "", totalPrice, "", ""], 3);
     row.getCell(5).numFmt = QTY_FORMAT;
     row.getCell(7).numFmt = CURRENCY_FORMAT;
   }
@@ -209,12 +216,11 @@ export function buildOutgoingSheet(wb: ExcelJS.Workbook, data: ReportData) {
   sheet.getColumn("totalCost").numFmt = CURRENCY_FORMAT;
 
   if (data.outgoingRows.length) {
-    const row = addTotalsRow(
-      sheet,
-      "Total",
-      ["", "", "", totalQty, "", "", totalCost, "", ""],
-      3
-    );
+    // Columns are Date,Time,Product,Unit,Quantity,Department,UnitCost,
+    // TotalCost,Notes,EntryID — label spans cols 1-3, so values[] starts at
+    // col 4 (Unit) and must line up totalQty under Quantity (col 5) and
+    // totalCost under Total Cost (col 8).
+    const row = addTotalsRow(sheet, "Total", ["", totalQty, "", "", totalCost, "", ""], 3);
     row.getCell(5).numFmt = QTY_FORMAT;
     row.getCell(8).numFmt = CURRENCY_FORMAT;
   }

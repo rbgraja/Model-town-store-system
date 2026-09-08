@@ -788,10 +788,14 @@ export function buildPerDepartmentSheets(wb: Workbook, data: ReportData, opts: O
     sheet.getColumn(2).width = 20;
     sheet.getColumn(3).width = 28;
     sheet.getColumn(4).width = 8;
-    sheet.getColumn(5).width = 12;
+    // Column 5 is "Unit" in the detail table below, but also holds the KPI
+    // row's Rs. "Total Expense" value above it — and column 8 ("Expense")
+    // holds Rs. amounts too. Both need to be wide enough for "Rs. 100,575.88"
+    // (~14 chars), not just a short unit label, or Excel clips them to "######".
+    sheet.getColumn(5).width = 16;
     sheet.getColumn(6).width = 16;
     sheet.getColumn(7).width = 14;
-    sheet.getColumn(8).width = 12;
+    sheet.getColumn(8).width = 16;
 
     sheet.views = [{ state: "frozen", ySplit: 5 }];
   }
