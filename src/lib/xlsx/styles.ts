@@ -1,6 +1,6 @@
 import type { Worksheet } from "exceljs";
 
-export const CURRENCY_FORMAT = '"$"#,##0.00';
+export const CURRENCY_FORMAT = '"Rs. "#,##0.00';
 export const QTY_FORMAT = "#,##0.###";
 export const DATE_FORMAT = "yyyy-mm-dd";
 

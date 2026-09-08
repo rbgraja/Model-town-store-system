@@ -1,6 +1,6 @@
 import "server-only";
 import type { Workbook, Worksheet } from "exceljs";
-import { QTY_FORMAT, styleHeaderRow } from "./styles";
+import { CURRENCY_FORMAT, QTY_FORMAT, styleHeaderRow } from "./styles";
 import { dateRange, groupProductsByCategory, type ReportData } from "./report-data";
 import type { ProductReportSummaryRow } from "@/lib/types/database";
 
@@ -39,7 +39,9 @@ interface Options {
 }
 
 // Rupee currency format — the operator's ledger is denominated in PKR.
-export const RS_FORMAT = '"Rs. "#,##0.00';
+// Re-exported from styles.ts so there's a single source of truth (both
+// names kept so every existing call site in this file still resolves).
+export const RS_FORMAT = CURRENCY_FORMAT;
 
 // -----------------------------------------------------------------------------
 // Sheet 1 — Store In & Out (monetary summary per product, grouped by category)

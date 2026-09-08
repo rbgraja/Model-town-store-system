@@ -4,15 +4,17 @@ export function cn(...inputs: ClassValue[]) {
   return clsx(inputs);
 }
 
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
+// Plain "Rs. " prefix rather than Intl currency formatting with "PKR" — ICU's
+// PKR symbol support is inconsistent across browsers/Node (some render "₨",
+// others fall back to "PKR"), and this matches the xlsx reports exactly
+// (see RS_FORMAT in src/lib/xlsx/build-template-sheets.ts).
+const amountFormatter = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
 
 export function formatCurrency(value: number | null | undefined): string {
-  return currencyFormatter.format(value ?? 0);
+  return `Rs. ${amountFormatter.format(value ?? 0)}`;
 }
 
 export function formatQuantity(
