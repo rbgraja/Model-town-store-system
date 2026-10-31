@@ -25,6 +25,17 @@ export interface IncomingRow {
   void_reason: string | null;
   fully_untouched: boolean;
   batch_id: string | null;
+  remaining_quantity: number;
+  used_by: { department_name: string; quantity: number; cost: number }[];
+}
+
+function UsedByText({ r }: { r: IncomingRow }) {
+  if (r.used_by.length === 0) return <span className="text-gray-300">—</span>;
+  return (
+    <span className="text-gray-600">
+      {r.used_by.map((u) => `${u.department_name}: ${formatQuantity(u.quantity, r.unit)}`).join(", ")}
+    </span>
+  );
 }
 
 interface RowGroup {
@@ -118,6 +129,24 @@ export function IncomingTable({ rows }: { rows: IncomingRow[] }) {
 
             <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
               <div>
+                <p className="text-gray-500">Used</p>
+                <p className="font-semibold text-gray-900">
+                  {formatQuantity(r.quantity - r.remaining_quantity, r.unit)}
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-500">Remaining</p>
+                <p className="font-semibold text-gray-900">
+                  {formatQuantity(r.remaining_quantity, r.unit)}
+                </p>
+              </div>
+              <div className="col-span-2">
+                <p className="text-gray-500">Used by</p>
+                <p className="text-xs">
+                  <UsedByText r={r} />
+                </p>
+              </div>
+              <div>
                 <p className="text-gray-500">Total Price</p>
                 <p className="font-semibold text-gray-900">
                   {formatCurrency(r.total_price)}
@@ -195,6 +224,9 @@ export function IncomingTable({ rows }: { rows: IncomingRow[] }) {
                 <th className="px-4 py-3 text-right">Quantity</th>
                 <th className="px-4 py-3 text-right">Per Unit</th>
                 <th className="px-4 py-3 text-right">Total Price</th>
+                <th className="px-4 py-3 text-right">Used</th>
+                <th className="px-4 py-3 text-right">Remaining</th>
+                <th className="px-4 py-3">Used By</th>
                 <th className="px-4 py-3">Receipt</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
@@ -204,7 +236,7 @@ export function IncomingTable({ rows }: { rows: IncomingRow[] }) {
                 <Fragment key={group.key}>
                   {group.isBulkBatch && group.rows.length >= 2 && (
                     <tr>
-                      <td colSpan={8} className="bg-blue-50 px-4 py-1.5">
+                      <td colSpan={11} className="bg-blue-50 px-4 py-1.5">
                         <BatchHeader group={group} />
                       </td>
                     </tr>
@@ -226,6 +258,15 @@ export function IncomingTable({ rows }: { rows: IncomingRow[] }) {
                   </td>
                   <td className="px-4 py-3 text-right">{formatCurrency(r.unit_price)}</td>
                   <td className="px-4 py-3 text-right">{formatCurrency(r.total_price)}</td>
+                  <td className="px-4 py-3 text-right">
+                    {formatQuantity(r.quantity - r.remaining_quantity, r.unit)}
+                  </td>
+                  <td className="px-4 py-3 text-right font-medium">
+                    {formatQuantity(r.remaining_quantity, r.unit)}
+                  </td>
+                  <td className="max-w-[260px] truncate px-4 py-3">
+                    <UsedByText r={r} />
+                  </td>
                   <td className="px-4 py-3">
                     {r.receipt_path ? (
                       <a
@@ -267,7 +308,7 @@ export function IncomingTable({ rows }: { rows: IncomingRow[] }) {
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-sm text-gray-400">
+                  <td colSpan={11} className="px-4 py-8 text-center text-sm text-gray-400">
                     No incoming entries found.
                   </td>
                 </tr>

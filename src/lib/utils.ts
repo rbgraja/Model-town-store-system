@@ -108,6 +108,9 @@ export function humanizeDbError(message: string): string {
       : "This purchase has already been issued against and cannot be edited that way.",
     QUANTITY_BELOW_CONSUMED:
       "Quantity cannot be lower than what has already been issued from this batch.",
+    INSUFFICIENT_DEPARTMENT_STOCK: message.includes(":")
+      ? message.split(":").slice(1).join(":").trim()
+      : "The department does not hold that much of this product.",
     OUTGOING_ENTRY_NOT_FOUND: "Outgoing entry not found.",
     ALREADY_VOID: "This entry has already been voided.",
     YEAR_ALREADY_ARCHIVED: "This year has already been archived.",

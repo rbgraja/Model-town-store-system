@@ -1,5 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { fetchBatchDepartmentUsage, type BatchDepartmentUsage } from "@/lib/batch-usage";
 import type {
   Category,
   DailyActivityRow,
@@ -19,6 +20,8 @@ export interface RawIncomingRow {
   unit_price: number;
   total_price: number;
   has_receipt: boolean;
+  remaining_quantity: number;
+  used_by: BatchDepartmentUsage[];
 }
 
 export interface RawOutgoingRow {
@@ -43,6 +46,19 @@ export interface ReportData {
   incomingRows: RawIncomingRow[];
   outgoingRows: RawOutgoingRow[];
   categories: Category[];
+  departmentStock: DepartmentStockRow[];
+}
+
+export interface DepartmentStockRow {
+  department_id: string;
+  department_name: string;
+  product_id: string;
+  product_name: string;
+  unit: string;
+  opening_qty: number;
+  received_qty: number;
+  used_qty: number;
+  remaining_qty: number;
 }
 
 /**
@@ -63,6 +79,7 @@ export async function fetchReportData(
     { data: incomingBatches },
     { data: outgoingEntries },
     { data: categories },
+    { data: departmentStock },
   ] = await Promise.all([
     supabase.rpc("fn_product_report_summary", { p_from: from, p_to: to }),
     supabase.rpc("fn_department_report_summary", { p_from: from, p_to: to }),
@@ -88,6 +105,7 @@ export async function fetchReportData(
       .select("*")
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true }),
+    supabase.rpc("fn_department_stock", { p_from: from, p_to: to }),
   ]);
 
   const productMap = new Map(
@@ -97,8 +115,15 @@ export async function fetchReportData(
     (departments ?? []).map((d) => [d.id, d as { id: string; name: string }])
   );
 
+  const usage = await fetchBatchDepartmentUsage(
+    supabase,
+    ((incomingBatches as IncomingBatch[]) ?? []).map((b) => b.id)
+  );
+
   const incomingRows: RawIncomingRow[] = ((incomingBatches as IncomingBatch[]) ?? []).map(
     (b) => ({
+      remaining_quantity: Number(b.remaining_quantity),
+      used_by: usage.get(b.id) ?? [],
       id: b.id,
       entry_date: b.entry_date,
       entry_time: b.entry_time,
@@ -135,6 +160,7 @@ export async function fetchReportData(
     incomingRows,
     outgoingRows,
     categories: (categories as Category[]) ?? [],
+    departmentStock: (departmentStock as DepartmentStockRow[]) ?? [],
   };
 }
 

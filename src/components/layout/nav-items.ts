@@ -12,6 +12,7 @@ import {
   Archive,
   Settings,
   HelpCircle,
+  ClipboardList,
 } from "lucide-react";
 
 export interface NavItem {
@@ -24,6 +25,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/incoming", label: "Incoming", icon: ArrowDownToLine },
   { href: "/outgoing", label: "Outgoing", icon: ArrowUpFromLine },
+  { href: "/department-usage", label: "Department Usage", icon: ClipboardList },
   { href: "/products", label: "Products", icon: Package },
   { href: "/categories", label: "Categories", icon: Tag },
   { href: "/departments", label: "Departments", icon: Building2 },

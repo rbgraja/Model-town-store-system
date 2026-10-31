@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { FilterBar } from "@/components/filters/filter-bar";
 import { IncomingTable, type IncomingRow } from "./incoming-table";
+import { fetchBatchDepartmentUsage } from "@/lib/batch-usage";
 import type { IncomingBatch, Product } from "@/lib/types/database";
 
 const PAGE_SIZE = 25;
@@ -51,7 +52,14 @@ export default async function IncomingPage({
     ])
   );
 
+  const usage = await fetchBatchDepartmentUsage(
+    supabase,
+    ((batches as IncomingBatch[]) ?? []).map((b) => b.id)
+  );
+
   const rows: IncomingRow[] = ((batches as IncomingBatch[]) ?? []).map((b) => ({
+    remaining_quantity: Number(b.remaining_quantity),
+    used_by: usage.get(b.id) ?? [],
     id: b.id,
     entry_date: b.entry_date,
     entry_time: b.entry_time,

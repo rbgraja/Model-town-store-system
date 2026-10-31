@@ -279,7 +279,9 @@ function buildMatrixSheet(
   }
   const dayCount = dates.length;
   // Columns: S.No | Category | Product | Unit | Opening | day1..dayN | Total | Expense | Closing
-  const totalCols = 5 + dayCount + 3;
+  // Inward sheet gets one extra trailing column: average unit price paid.
+  const avgPriceCol = mode === "incoming" ? 5 + dayCount + 4 : 0;
+  const totalCols = 5 + dayCount + 3 + (avgPriceCol ? 1 : 0);
   const totalQtyCol = 5 + dayCount + 1;
   const expenseCol = 5 + dayCount + 2;
   const closingCol = 5 + dayCount + 3;
@@ -302,6 +304,7 @@ function buildMatrixSheet(
   headerRow.push(label === "OUT" ? "TOTAL OUT" : "TOTAL IN");
   headerRow.push(label === "OUT" ? "OUT EXPENSE" : "IN EXPENSE");
   headerRow.push("CLOSING STOCK");
+  if (avgPriceCol) headerRow.push("AVG UNIT PRICE");
   sheet.addRow(headerRow);
   styleHeaderRow(sheet, 2);
 
@@ -354,7 +357,12 @@ function buildMatrixSheet(
         sumDaily += v;
       }
       rowValues.push(null, expense || null, null); // Total, Expense, Closing placeholders
+      if (avgPriceCol) {
+        const inQty = Number(p.incoming_qty);
+        rowValues.push(inQty > 0 ? expense / inQty : null);
+      }
       const row = sheet.addRow(rowValues);
+      if (avgPriceCol) row.getCell(avgPriceCol).numFmt = RS_FORMAT;
       // category tint on the category column
       row.getCell(2).fill = {
         type: "pattern",
@@ -415,8 +423,9 @@ function buildMatrixSheet(
   sheet.getColumn(totalQtyCol).width = 11;
   sheet.getColumn(expenseCol).width = 16;
   sheet.getColumn(closingCol).width = 14;
+  if (avgPriceCol) sheet.getColumn(avgPriceCol).width = 16;
   for (let c = 5; c <= totalCols; c++) {
-    if (c !== expenseCol) sheet.getColumn(c).numFmt = QTY_FORMAT;
+    if (c !== expenseCol && c !== avgPriceCol) sheet.getColumn(c).numFmt = QTY_FORMAT;
   }
 
   sheet.views = [{ state: "frozen", xSplit: 5, ySplit: 2 }];

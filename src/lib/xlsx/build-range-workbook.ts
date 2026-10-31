@@ -38,8 +38,41 @@ export function buildRangeWorkbook(
   buildIncomingSheet(wb, data);
   buildOutgoingSheet(wb, data);
   buildDailyMovementSheet(wb, data);
+  buildDepartmentStockSheet(wb, data);
 
   return wb;
+}
+
+// Per department x product: opening (last month's remaining) + received from
+// store - used = remaining (which becomes next month's opening).
+function buildDepartmentStockSheet(wb: ExcelJS.Workbook, data: ReportData) {
+  if (data.departmentStock.length === 0) return;
+  const sheet = wb.addWorksheet("Department Stock");
+  sheet.columns = [
+    { header: "Department", key: "department", width: 22 },
+    { header: "Product", key: "product", width: 26 },
+    { header: "Unit", key: "unit", width: 10 },
+    { header: "Opening Qty", key: "opening", width: 14 },
+    { header: "Received Qty", key: "received", width: 14 },
+    { header: "Used Qty", key: "used", width: 12 },
+    { header: "Remaining Qty", key: "remaining", width: 15 },
+  ];
+  styleHeaderRow(sheet);
+  for (const r of data.departmentStock) {
+    sheet.addRow({
+      department: r.department_name,
+      product: r.product_name,
+      unit: r.unit,
+      opening: Number(r.opening_qty),
+      received: Number(r.received_qty),
+      used: Number(r.used_qty),
+      remaining: Number(r.remaining_qty),
+    });
+  }
+  for (const key of ["opening", "received", "used", "remaining"]) {
+    sheet.getColumn(key).numFmt = QTY_FORMAT;
+  }
+  sheet.views = [{ state: "frozen", ySplit: 1 }];
 }
 
 function buildSummarySheet(
@@ -140,6 +173,9 @@ export function buildIncomingSheet(wb: ExcelJS.Workbook, data: ReportData) {
     { header: "Quantity", key: "qty", width: 12 },
     { header: "Per Unit Price", key: "unitPrice", width: 14 },
     { header: "Total Price", key: "totalPrice", width: 14 },
+    { header: "Used Qty", key: "usedQty", width: 12 },
+    { header: "Remaining Qty", key: "remainingQty", width: 14 },
+    { header: "Used By (Department: Qty)", key: "usedBy", width: 40 },
     { header: "Receipt", key: "receipt", width: 10 },
     { header: "Entry ID", key: "id", width: 38 },
   ];
@@ -156,6 +192,9 @@ export function buildIncomingSheet(wb: ExcelJS.Workbook, data: ReportData) {
       qty: r.quantity,
       unitPrice: r.unit_price,
       totalPrice: r.total_price,
+      usedQty: r.quantity - r.remaining_quantity,
+      remainingQty: r.remaining_quantity,
+      usedBy: r.used_by.map((u) => `${u.department_name}: ${u.quantity}`).join(", "),
       receipt: r.has_receipt ? "Yes" : "No",
       id: r.id,
     });
@@ -165,6 +204,8 @@ export function buildIncomingSheet(wb: ExcelJS.Workbook, data: ReportData) {
   sheet.getColumn("qty").numFmt = QTY_FORMAT;
   sheet.getColumn("unitPrice").numFmt = CURRENCY_FORMAT;
   sheet.getColumn("totalPrice").numFmt = CURRENCY_FORMAT;
+  sheet.getColumn("usedQty").numFmt = QTY_FORMAT;
+  sheet.getColumn("remainingQty").numFmt = QTY_FORMAT;
 
   if (data.incomingRows.length) {
     // Columns are Date,Time,Product,Unit,Quantity,PerUnitPrice,TotalPrice,
