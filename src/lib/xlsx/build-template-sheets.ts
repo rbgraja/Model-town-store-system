@@ -48,7 +48,9 @@ export const RS_FORMAT = CURRENCY_FORMAT;
 // -----------------------------------------------------------------------------
 export function buildStoreOverviewSheet(wb: Workbook, data: ReportData, opts: Options) {
   const sheet = wb.addWorksheet("Store In & Out");
-  const totalCols = 13; // added a Category column at position 2
+  // S.No, Category, Product, Unit, Opening Qty/Value, Incoming Qty/Expense/
+  // Unit Price, Outgoing Qty/Expense/Unit Cost, Closing Qty/Value, Status
+  const totalCols = 15;
 
   sheet.mergeCells(1, 1, 1, totalCols);
   const title = sheet.getCell(1, 1);
@@ -66,8 +68,10 @@ export function buildStoreOverviewSheet(wb: Workbook, data: ReportData, opts: Op
     "Opening Value",
     "Incoming Qty",
     "Incoming Expense",
+    "Incoming Unit Price (Avg)",
     "Outgoing Qty",
     "Outgoing Expense (Consumption)",
+    "Outgoing Unit Cost (Avg)",
     "Closing Qty",
     "Closing Value",
     "Status",
@@ -127,8 +131,10 @@ export function buildStoreOverviewSheet(wb: Workbook, data: ReportData, opts: Op
         openingVal || null,
         inQty || null,
         inExp || null,
+        inQty > 0 ? inExp / inQty : null,
         outQty || null,
         outExp || null,
+        outQty > 0 ? outExp / outQty : null,
         closeQty || null,
         closeVal || null,
         status,
@@ -143,28 +149,30 @@ export function buildStoreOverviewSheet(wb: Workbook, data: ReportData, opts: Op
       row.getCell(6).numFmt = RS_FORMAT;
       row.getCell(7).numFmt = QTY_FORMAT;
       row.getCell(8).numFmt = RS_FORMAT;
-      row.getCell(9).numFmt = QTY_FORMAT;
-      row.getCell(10).numFmt = RS_FORMAT;
-      row.getCell(11).numFmt = QTY_FORMAT;
+      row.getCell(9).numFmt = RS_FORMAT;
+      row.getCell(10).numFmt = QTY_FORMAT;
+      row.getCell(11).numFmt = RS_FORMAT;
       row.getCell(12).numFmt = RS_FORMAT;
+      row.getCell(13).numFmt = QTY_FORMAT;
+      row.getCell(14).numFmt = RS_FORMAT;
       // status column tint
       if (status === "OUT OF STOCK") {
-        row.getCell(13).font = { color: { argb: "FFB91C1C" }, bold: true };
-        row.getCell(13).fill = {
+        row.getCell(15).font = { color: { argb: "FFB91C1C" }, bold: true };
+        row.getCell(15).fill = {
           type: "pattern",
           pattern: "solid",
           fgColor: { argb: "FFFEE2E2" },
         };
       } else if (status === "DEPLETED") {
-        row.getCell(13).font = { color: { argb: "FF92400E" } };
-        row.getCell(13).fill = {
+        row.getCell(15).font = { color: { argb: "FF92400E" } };
+        row.getCell(15).fill = {
           type: "pattern",
           pattern: "solid",
           fgColor: { argb: "FFFEF3C7" },
         };
       } else {
-        row.getCell(13).font = { color: { argb: "FF065F46" } };
-        row.getCell(13).fill = {
+        row.getCell(15).font = { color: { argb: "FF065F46" } };
+        row.getCell(15).fill = {
           type: "pattern",
           pattern: "solid",
           fgColor: { argb: "FFD1FAE5" },
@@ -192,8 +200,10 @@ export function buildStoreOverviewSheet(wb: Workbook, data: ReportData, opts: Op
     totOpenVal,
     totInQty,
     totInExp,
+    "", // a grand-total unit price across different units is meaningless
     totOutQty,
     totOutExp,
+    "",
     totCloseQty,
     totCloseVal,
     "",
@@ -204,10 +214,10 @@ export function buildStoreOverviewSheet(wb: Workbook, data: ReportData, opts: Op
   totalRow.getCell(6).numFmt = RS_FORMAT;
   totalRow.getCell(7).numFmt = QTY_FORMAT;
   totalRow.getCell(8).numFmt = RS_FORMAT;
-  totalRow.getCell(9).numFmt = QTY_FORMAT;
-  totalRow.getCell(10).numFmt = RS_FORMAT;
-  totalRow.getCell(11).numFmt = QTY_FORMAT;
-  totalRow.getCell(12).numFmt = RS_FORMAT;
+  totalRow.getCell(10).numFmt = QTY_FORMAT;
+  totalRow.getCell(11).numFmt = RS_FORMAT;
+  totalRow.getCell(13).numFmt = QTY_FORMAT;
+  totalRow.getCell(14).numFmt = RS_FORMAT;
   totalRow.eachCell((cell) => {
     cell.border = {
       top: { style: "double", color: { argb: "FF6B7280" } },
@@ -240,8 +250,8 @@ export function buildStoreOverviewSheet(wb: Workbook, data: ReportData, opts: Op
   sheet.getColumn(2).width = 22;
   sheet.getColumn(3).width = 32;
   sheet.getColumn(4).width = 8;
-  for (let c = 5; c <= 12; c++) sheet.getColumn(c).width = 15;
-  sheet.getColumn(13).width = 14;
+  for (let c = 5; c <= 14; c++) sheet.getColumn(c).width = 15;
+  sheet.getColumn(15).width = 14;
 
   sheet.views = [{ state: "frozen", xSplit: 4, ySplit: 2 }];
   addThinBorders(sheet, 2, lastDataRow, 1, totalCols);

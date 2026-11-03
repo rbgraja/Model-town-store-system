@@ -45,7 +45,7 @@ export function buildRangeWorkbook(
 
 // Per department x product: opening (last month's remaining) + received from
 // store - used = remaining (which becomes next month's opening).
-function buildDepartmentStockSheet(wb: ExcelJS.Workbook, data: ReportData) {
+export function buildDepartmentStockSheet(wb: ExcelJS.Workbook, data: ReportData) {
   if (data.departmentStock.length === 0) return;
   const sheet = wb.addWorksheet("Department Stock");
   sheet.columns = [

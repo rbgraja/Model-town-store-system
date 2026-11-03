@@ -43,12 +43,12 @@ export function MonthlyReportForm() {
   const [year, setYear] = useState(now.getFullYear());
   const [pending, setPending] = useState(false);
 
-  async function handleGenerate() {
+  async function handleGenerate(scope: string) {
     setPending(true);
     try {
       await downloadReport(
-        `/api/reports/monthly?month=${month}&year=${year}`,
-        `Store_Report_${monthName(month)}_${year}.xlsx`
+        `/api/reports/monthly?month=${month}&year=${year}&scope=${scope}`,
+        `Store_Report_${monthName(month)}_${year}_${scope}.${scope === "zip" ? "zip" : "xlsx"}`
       );
       toast.success("Report generated successfully");
     } catch (err) {
@@ -62,7 +62,7 @@ export function MonthlyReportForm() {
     <Card>
       <CardHeader
         title="Monthly Report"
-        description="Complete opening/closing stock, expenses and movement for one month."
+        description="Kitchen, Grocery Store, Bakery, baaki departments aur Total: 5 alag Excel files, ek ZIP mein ya alag alag."
       />
       <CardBody className="flex flex-wrap items-end gap-3">
         <div className="w-40">
@@ -90,14 +90,38 @@ export function MonthlyReportForm() {
             />
           </Field>
         </div>
-        <Button onClick={handleGenerate} disabled={pending}>
+        <Button onClick={() => handleGenerate("zip")} disabled={pending}>
           <Download className="h-4 w-4" />
-          {pending ? "Generating..." : "Generate XLSX"}
+          {pending ? "Generating..." : "Download all 5 files (ZIP)"}
         </Button>
+        <div className="w-full border-t border-gray-100 pt-3">
+          <p className="mb-2 text-xs text-gray-500">Ya sirf ek file download karo:</p>
+          <div className="flex flex-wrap gap-2">
+            {MONTHLY_FILES.map((f) => (
+              <Button
+                key={f.scope}
+                variant="secondary"
+                size="sm"
+                onClick={() => handleGenerate(f.scope)}
+                disabled={pending}
+              >
+                <Download className="h-3.5 w-3.5" /> {f.label}
+              </Button>
+            ))}
+          </div>
+        </div>
       </CardBody>
     </Card>
   );
 }
+
+const MONTHLY_FILES = [
+  { scope: "kitchen", label: "Kitchen" },
+  { scope: "grocery", label: "Grocery Store" },
+  { scope: "bakery", label: "Bakery" },
+  { scope: "others", label: "Other Departments" },
+  { scope: "total", label: "Total (All)" },
+];
 
 export function CustomReportForm() {
   const [from, setFrom] = useState(todayISODate());
