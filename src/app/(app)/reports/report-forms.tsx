@@ -62,7 +62,7 @@ export function MonthlyReportForm() {
     <Card>
       <CardHeader
         title="Monthly Report"
-        description="Kitchen, Grocery Store, Bakery, baaki departments aur Total: 5 alag Excel files, ek ZIP mein ya alag alag."
+        description="3 Excel files: Kitchen + Grocery Store + Bakery ek mein, baaki departments ek mein, aur Total. Ek ZIP mein ya alag alag."
       />
       <CardBody className="flex flex-wrap items-end gap-3">
         <div className="w-40">
@@ -92,7 +92,7 @@ export function MonthlyReportForm() {
         </div>
         <Button onClick={() => handleGenerate("zip")} disabled={pending}>
           <Download className="h-4 w-4" />
-          {pending ? "Generating..." : "Download all 5 files (ZIP)"}
+          {pending ? "Generating..." : "Download all 3 files (ZIP)"}
         </Button>
         <div className="w-full border-t border-gray-100 pt-3">
           <p className="mb-2 text-xs text-gray-500">Ya sirf ek file download karo:</p>
@@ -116,9 +116,7 @@ export function MonthlyReportForm() {
 }
 
 const MONTHLY_FILES = [
-  { scope: "kitchen", label: "Kitchen" },
-  { scope: "grocery", label: "Grocery Store" },
-  { scope: "bakery", label: "Bakery" },
+  { scope: "main", label: "Kitchen + Grocery Store + Bakery" },
   { scope: "others", label: "Other Departments" },
   { scope: "total", label: "Total (All)" },
 ];

@@ -11,8 +11,8 @@ import { monthlyReportSchema } from "@/lib/validation";
 const XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 /**
- * ?scope= total (default, the original all-in report) | kitchen | grocery |
- * bakery | others | zip (all five files in one download).
+ * ?scope= total (default, the original all-in report) | main (Kitchen +
+ * Grocery Store + Bakery) | others | zip (all three files in one download).
  */
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
