@@ -10,7 +10,7 @@ export interface DepartmentReportData {
   to: string;
   stock: DepartmentStockRow[];
   issued: { date: string; time: string; product: string; unit: string; quantity: number; unitCost: number; totalCost: number; notes: string }[];
-  usage: { date: string; product: string; unit: string; quantity: number }[];
+  usage: { date: string; product: string; unit: string; quantity: number; kind: string }[];
 }
 
 /** Everything one department's monthly sheet needs, in a few round-trips. */
@@ -68,6 +68,7 @@ export async function fetchDepartmentReportData(
       product: productName.get(u.product_id) ?? "Unknown",
       unit: u.unit,
       quantity: Number(u.quantity),
+      kind: u.kind === "waste" ? "Waste" : "Used",
     })),
   };
 }
@@ -80,13 +81,14 @@ export function buildDepartmentWorkbook(data: DepartmentReportData, periodLabel:
   // --- Summary: start + received - used = left, per product ------------------
   const s = wb.addWorksheet("Summary");
   s.columns = [
-    { width: 28 }, { width: 10 }, { width: 14 }, { width: 14 }, { width: 12 }, { width: 14 },
+    { width: 28 }, { width: 10 }, { width: 14 }, { width: 14 }, { width: 12 }, { width: 12 }, { width: 16 }, { width: 14 },
   ];
   s.addRow([`${data.departmentName.toUpperCase()} — ${periodLabel}`]);
   styleTitleRow(s, 1);
   s.addRow([]);
-  s.addRow(["Product", "Unit", "Start Qty", "Received Qty", "Used Qty", "Left Qty"]);
+  s.addRow(["Product", "Unit", "Start Qty", "Received Qty", "Used Qty", "Waste Qty", "Waste Value", "Left Qty"]);
   styleHeaderRow(s, 3);
+  let totalWaste = 0;
   for (const r of data.stock) {
     const row = s.addRow([
       r.product_name,
@@ -94,12 +96,21 @@ export function buildDepartmentWorkbook(data: DepartmentReportData, periodLabel:
       Number(r.opening_qty),
       Number(r.received_qty),
       Number(r.used_qty),
+      Number(r.waste_qty ?? 0),
+      Number(r.waste_value ?? 0),
       Number(r.remaining_qty),
     ]);
-    for (let c = 3; c <= 6; c++) row.getCell(c).numFmt = QTY_FORMAT;
-    row.getCell(6).font = { bold: true };
+    for (const c of [3, 4, 5, 6, 8]) row.getCell(c).numFmt = QTY_FORMAT;
+    row.getCell(7).numFmt = CURRENCY_FORMAT;
+    row.getCell(8).font = { bold: true };
+    totalWaste += Number(r.waste_value ?? 0);
   }
   if (data.stock.length === 0) s.addRow(["No stock activity for this department in this period."]);
+  else {
+    const t = s.addRow(["Total waste value", "", "", "", "", "", totalWaste, ""]);
+    t.font = { bold: true };
+    t.getCell(7).numFmt = CURRENCY_FORMAT;
+  }
   s.addRow([]);
   s.addRow(["Left Qty carries forward as next month's Start Qty."]).font = { italic: true, color: { argb: "FF6B7280" } };
   s.views = [{ state: "frozen", ySplit: 3 }];
@@ -138,11 +149,12 @@ export function buildDepartmentWorkbook(data: DepartmentReportData, periodLabel:
     { header: "Date", width: 12 },
     { header: "Product", width: 28 },
     { header: "Unit", width: 10 },
-    { header: "Used Qty", width: 12 },
+    { header: "Qty", width: 12 },
+    { header: "Type", width: 10 },
   ];
   styleHeaderRow(u);
   for (const e of data.usage) {
-    const row = u.addRow([e.date, e.product, e.unit, e.quantity]);
+    const row = u.addRow([e.date, e.product, e.unit, e.quantity, e.kind]);
     row.getCell(4).numFmt = QTY_FORMAT;
   }
   u.views = [{ state: "frozen", ySplit: 1 }];

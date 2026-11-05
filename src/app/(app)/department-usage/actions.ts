@@ -46,7 +46,13 @@ const bulkSchema = z.object({
   departmentId: z.string().uuid(),
   entryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date"),
   items: z
-    .array(z.object({ productId: z.string().uuid(), quantity: z.coerce.number().min(0) }))
+    .array(
+      z.object({
+        productId: z.string().uuid(),
+        kind: z.enum(["used", "waste"]),
+        quantity: z.coerce.number().min(0),
+      })
+    )
     .min(1, "Nothing changed"),
 });
 
@@ -68,6 +74,7 @@ export async function createDepartmentUsageBulk(input: unknown): Promise<ActionR
       p_product_id: item.productId,
       p_entry_date: parsed.data.entryDate,
       p_quantity: item.quantity,
+      p_kind: item.kind,
     });
     if (error) {
       revalidatePath("/department-usage");

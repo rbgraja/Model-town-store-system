@@ -15,6 +15,8 @@ interface DeptStockRow {
   opening_qty: number;
   received_qty: number;
   used_qty: number;
+  waste_qty: number;
+  waste_value: number;
   remaining_qty: number;
 }
 
@@ -39,16 +41,18 @@ export default async function DepartmentUsagePage({
   const activeId = depts.find(([id]) => id === department)?.[0] ?? depts[0]?.[0];
 
   // What was already saved for this department on the chosen date.
-  const savedByProduct = new Map<string, number>();
+  const savedUsed = new Map<string, number>();
+  const savedWaste = new Map<string, number>();
   if (activeId) {
     const { data: saved } = await supabase
       .from("department_usage")
-      .select("product_id, quantity")
+      .select("product_id, quantity, kind")
       .eq("department_id", activeId)
       .eq("entry_date", date)
       .eq("is_void", false);
-    for (const s of (saved as { product_id: string; quantity: number }[]) ?? []) {
-      savedByProduct.set(s.product_id, (savedByProduct.get(s.product_id) ?? 0) + Number(s.quantity));
+    for (const s of (saved as { product_id: string; quantity: number; kind: string }[]) ?? []) {
+      const target = s.kind === "waste" ? savedWaste : savedUsed;
+      target.set(s.product_id, (target.get(s.product_id) ?? 0) + Number(s.quantity));
     }
   }
 
@@ -61,8 +65,11 @@ export default async function DepartmentUsagePage({
       opening: Number(r.opening_qty),
       received: Number(r.received_qty),
       used: Number(r.used_qty),
+      waste: Number(r.waste_qty ?? 0),
+      wasteValue: Number(r.waste_value ?? 0),
       remaining: Number(r.remaining_qty),
-      savedToday: savedByProduct.get(r.product_id) ?? 0,
+      savedUsed: savedUsed.get(r.product_id) ?? 0,
+      savedWaste: savedWaste.get(r.product_id) ?? 0,
     }));
 
   const href = (id: string) => `/department-usage?date=${date}&department=${id}`;

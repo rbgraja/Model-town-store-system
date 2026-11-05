@@ -55,9 +55,12 @@ export function buildDepartmentStockSheet(wb: ExcelJS.Workbook, data: ReportData
     { header: "Opening Qty", key: "opening", width: 14 },
     { header: "Received Qty", key: "received", width: 14 },
     { header: "Used Qty", key: "used", width: 12 },
+    { header: "Waste Qty", key: "waste", width: 12 },
+    { header: "Waste Value", key: "wasteValue", width: 16 },
     { header: "Remaining Qty", key: "remaining", width: 15 },
   ];
   styleHeaderRow(sheet);
+  let totalWaste = 0;
   for (const r of data.departmentStock) {
     sheet.addRow({
       department: r.department_name,
@@ -66,12 +69,19 @@ export function buildDepartmentStockSheet(wb: ExcelJS.Workbook, data: ReportData
       opening: Number(r.opening_qty),
       received: Number(r.received_qty),
       used: Number(r.used_qty),
+      waste: Number(r.waste_qty ?? 0),
+      wasteValue: Number(r.waste_value ?? 0),
       remaining: Number(r.remaining_qty),
     });
+    totalWaste += Number(r.waste_value ?? 0);
   }
-  for (const key of ["opening", "received", "used", "remaining"]) {
+  for (const key of ["opening", "received", "used", "waste", "remaining"]) {
     sheet.getColumn(key).numFmt = QTY_FORMAT;
   }
+  sheet.getColumn("wasteValue").numFmt = CURRENCY_FORMAT;
+  const totalRow = sheet.addRow({ department: "Total waste value", wasteValue: totalWaste });
+  totalRow.font = { bold: true };
+  totalRow.getCell("wasteValue").numFmt = CURRENCY_FORMAT;
   sheet.views = [{ state: "frozen", ySplit: 1 }];
 }
 

@@ -58,6 +58,8 @@ export interface DepartmentStockRow {
   opening_qty: number;
   received_qty: number;
   used_qty: number;
+  waste_qty: number;
+  waste_value: number;
   remaining_qty: number;
 }
 
